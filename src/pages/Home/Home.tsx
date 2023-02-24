@@ -4,13 +4,15 @@ import {
   CollectionReference,
   DocumentData,
   collection,
+  doc,
   getFirestore,
   onSnapshot,
   query,
   where,
+  updateDoc,
 } from "firebase/firestore";
 import "./style.scss";
-import { Input } from "@mantine/core";
+import { Input, Loader, Table } from "@mantine/core";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -22,20 +24,25 @@ const FIREBASE_CONFIG = {
 };
 
 interface Fluid {
+  id: string;
   cause: string;
   echo: string;
-  serverId: string;
   rank: number;
+  serverId: string;
   solid: boolean;
+  [key: string]: string | number | boolean;
 }
 
 export function Home() {
   const fluidsCollection = useRef<
     CollectionReference<DocumentData> | undefined
-  >(undefined);
-  const unsubscribe = useRef<Function | undefined>(undefined);
-  const [serverId, setServerId] = useState<string | undefined>(undefined);
-  const [fluids, setFluids] = useState<Fluid[] | undefined>(undefined);
+  >();
+  const unsubscribe = useRef<Function | undefined>();
+  const changeTimeout = useRef<NodeJS.Timeout | undefined>();
+  const toSync = useRef<string[]>([]);
+  const [serverId, setServerId] = useState<string | undefined>();
+  const [fluids, setFluids] = useState<Fluid[] | undefined>();
+  const [syncing, setSyncing] = useState<boolean>(false);
 
   useEffect(() => {
     const app = initializeApp(FIREBASE_CONFIG);
@@ -49,29 +56,137 @@ export function Home() {
     if (unsubscribe.current) unsubscribe.current();
     const fluidsQuery = query(
       fluidsCollection.current,
-      where("serverId", "==", serverId)
+      where("serverId", "==", serverId),
+      where("solid", "==", false)
     );
     unsubscribe.current = onSnapshot(fluidsQuery, (snapshot) => {
       const array: Fluid[] = [];
       snapshot.forEach((doc) => {
-        array.push(doc.data() as Fluid);
+        array.push({
+          id: doc.id,
+          ...doc.data(),
+        } as Fluid);
       });
       setFluids(array);
     });
   }, [serverId]);
 
+  function change(id: string, key: string, value: string | number | boolean) {
+    if (!fluids || !id) return;
+    const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
+    if (fluidIndex < 0) return;
+
+    const temp = [...fluids];
+    temp[fluidIndex][key] = value;
+    setFluids(temp);
+    if (!toSync.current.includes(id)) toSync.current.push(id);
+
+    if (changeTimeout.current) clearTimeout(changeTimeout.current);
+    changeTimeout.current = setTimeout(async () => {
+      if (!fluidsCollection.current) return;
+
+      setSyncing(true);
+      await Promise.all(
+        toSync.current.map((id: string) => {
+          const fluid = fluids.find((fluid) => fluid.id === id);
+          const fluidDoc = doc(fluidsCollection.current!!, id);
+          if (!fluid) return;
+
+          return updateDoc(fluidDoc, {
+            cause: fluid.cause,
+            echo: fluid.echo,
+            rank: fluid.rank,
+            serverId: fluid.serverId,
+          });
+        })
+      );
+      setSyncing(false);
+      toSync.current = [];
+    }, 1000);
+  }
+
   return (
-    <>
+    <div className="home">
       <Input
         placeholder="Server ID"
         radius="xl"
         size="lg"
+        className="input"
         onChange={(event) => setServerId(event.target.value)}
       />
 
-      {serverId !== undefined &&
-        fluids &&
-        fluids.map((thing) => <p>{thing.echo}</p>)}
-    </>
+      {!!serverId && !!fluids && (
+        <Table
+          highlightOnHover
+          withColumnBorders
+          fontSize={"md"}
+          horizontalSpacing={"lg"}
+          verticalSpacing={"sm"}
+          className="table"
+        >
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cause</th>
+              <th>Echo</th>
+              <th>Rank</th>
+              <th>Server ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fluids
+              .filter((fluid) => !fluid.solid)
+              .map((fluid) => (
+                <tr key={fluid.id}>
+                  <td>{fluid.id}</td>
+                  <td>
+                    <input
+                      value={fluid.cause}
+                      placeholder="Cause"
+                      className="editable"
+                      onChange={(event) =>
+                        change(fluid.id, "cause", event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.echo}
+                      placeholder="Echo"
+                      className="editable"
+                      onChange={(event) =>
+                        change(fluid.id, "echo", event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.rank}
+                      placeholder="Rank"
+                      className="editable"
+                      onChange={(event) =>
+                        !isNaN(+event.target.value) &&
+                        change(fluid.id, "rank", +event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.serverId}
+                      placeholder="Server ID"
+                      className="editable"
+                      onChange={(event) =>
+                        change(fluid.id, "serverId", event.target.value)
+                      }
+                    />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </Table>
+      )}
+
+      {syncing && <Loader className="sync" />}
+    </div>
   );
 }

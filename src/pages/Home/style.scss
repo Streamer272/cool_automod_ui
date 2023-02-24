@@ -1,0 +1,37 @@
+.home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: fit-content;
+
+  .input {
+    width: fit-content;
+    margin: 0 0 1rem 0;
+  }
+
+  .table {
+    margin: 1rem 0 0 0;
+
+    td {
+      .editable {
+        border: none;
+        width: auto;
+        height: auto;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+
+        &:focus {
+          outline: none;
+        }
+      }
+    }
+  }
+
+  .sync {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+  }
+}
