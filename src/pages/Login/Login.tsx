@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
+import "./style.scss";
 
 export function Login() {
   const [user] = useUser();
