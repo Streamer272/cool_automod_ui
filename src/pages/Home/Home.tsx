@@ -10,9 +10,11 @@ import {
   query,
   where,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
-import "./style.scss";
 import { Input, Loader, Table } from "@mantine/core";
+import "./style.scss";
+import "../../styles/icons.scss";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -109,8 +111,12 @@ export function Home() {
     }, 1000);
   }
 
-  function deleteFluid(id: string) {
-    console.log("deleting fluid");
+  async function deleteFluid(id: string) {
+    if (!fluidsCollection.current) return;
+
+    setSyncing(true);
+    await deleteDoc(doc(fluidsCollection.current, id));
+    setSyncing(false);
   }
 
   return (
@@ -139,6 +145,7 @@ export function Home() {
               <th>Echo</th>
               <th>Rank</th>
               <th>Server ID</th>
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -189,6 +196,17 @@ export function Home() {
                       changeFluid(fluid.id, "serverId", event.target.value)
                     }
                   />
+                </td>
+                <td>
+                  <div className="delete">
+                    <button
+                      className="delete"
+                      disabled={fluid.solid}
+                      onClick={() => deleteFluid(fluid.id)}
+                    >
+                      <span className="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -26,6 +26,28 @@
           outline: none;
         }
       }
+
+      .delete {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        button {
+          border: none;
+          background: transparent;
+          width: fit-content;
+          padding: 0;
+          margin: 0;
+
+          &:not(:disabled) {
+            cursor: pointer;
+          }
+
+          span {
+            font-size: 1.5rem;
+          }
+        }
+      }
     }
   }
 
