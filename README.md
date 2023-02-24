@@ -2,6 +2,8 @@
 
 Website for the automod Discord bot.
 
+[https://github.com/Streamer272/automod](https://github.com/Streamer272/automod)
+
 ## Dev build
 
 ```
