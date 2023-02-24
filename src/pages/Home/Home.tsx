@@ -51,13 +51,11 @@ export function Home() {
   }, []);
 
   useEffect(() => {
-    console.log("serverId changed");
     if (!fluidsCollection.current || !serverId) return;
     if (unsubscribe.current) unsubscribe.current();
     const fluidsQuery = query(
       fluidsCollection.current,
-      where("serverId", "==", serverId),
-      where("solid", "==", false)
+      where("serverId", "==", serverId)
     );
     unsubscribe.current = onSnapshot(fluidsQuery, (snapshot) => {
       const array: Fluid[] = [];
@@ -71,7 +69,13 @@ export function Home() {
     });
   }, [serverId]);
 
-  function change(id: string, key: string, value: string | number | boolean) {
+  function createFluid() {}
+
+  function changeFluid(
+    id: string,
+    key: string,
+    value: string | number | boolean
+  ) {
     if (!fluids || !id) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
     if (fluidIndex < 0) return;
@@ -105,6 +109,10 @@ export function Home() {
     }, 1000);
   }
 
+  function deleteFluid(id: string) {
+    console.log("deleting fluid");
+  }
+
   return (
     <div className="home">
       <Input
@@ -134,54 +142,56 @@ export function Home() {
             </tr>
           </thead>
           <tbody>
-            {fluids
-              .filter((fluid) => !fluid.solid)
-              .map((fluid) => (
-                <tr key={fluid.id}>
-                  <td>{fluid.id}</td>
-                  <td>
-                    <input
-                      value={fluid.cause}
-                      placeholder="Cause"
-                      className="editable"
-                      onChange={(event) =>
-                        change(fluid.id, "cause", event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.echo}
-                      placeholder="Echo"
-                      className="editable"
-                      onChange={(event) =>
-                        change(fluid.id, "echo", event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.rank}
-                      placeholder="Rank"
-                      className="editable"
-                      onChange={(event) =>
-                        !isNaN(+event.target.value) &&
-                        change(fluid.id, "rank", +event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.serverId}
-                      placeholder="Server ID"
-                      className="editable"
-                      onChange={(event) =>
-                        change(fluid.id, "serverId", event.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
-              ))}
+            {fluids.map((fluid) => (
+              <tr key={fluid.id}>
+                <td>{fluid.id}</td>
+                <td>
+                  <input
+                    value={fluid.cause}
+                    placeholder="Cause"
+                    className="editable"
+                    disabled={fluid.solid}
+                    onChange={(event) =>
+                      changeFluid(fluid.id, "cause", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    value={fluid.echo}
+                    placeholder="Echo"
+                    className="editable"
+                    disabled={fluid.solid}
+                    onChange={(event) =>
+                      changeFluid(fluid.id, "echo", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    value={fluid.rank}
+                    placeholder="Rank"
+                    className="editable"
+                    disabled={fluid.solid}
+                    onChange={(event) =>
+                      !isNaN(+event.target.value) &&
+                      changeFluid(fluid.id, "rank", +event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    value={fluid.serverId}
+                    placeholder="Server ID"
+                    className="editable"
+                    disabled={fluid.solid}
+                    onChange={(event) =>
+                      changeFluid(fluid.id, "serverId", event.target.value)
+                    }
+                  />
+                </td>
+              </tr>
+            ))}
           </tbody>
         </Table>
       )}
