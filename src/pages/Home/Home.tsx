@@ -1,7 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { initializeApp } from "firebase/app";
-import { collection, getFirestore } from "firebase/firestore";
+import {
+  CollectionReference,
+  DocumentData,
+  collection,
+  getFirestore,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import "./style.scss";
+import { Input } from "@mantine/core";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -12,16 +21,57 @@ const FIREBASE_CONFIG = {
   appId: "1:443774039339:web:23009675563b39bfdcc16e",
 };
 
+interface Fluid {
+  cause: string;
+  echo: string;
+  serverId: string;
+  rank: number;
+  solid: boolean;
+}
+
 export function Home() {
+  const fluidsCollection = useRef<
+    CollectionReference<DocumentData> | undefined
+  >(undefined);
+  const unsubscribe = useRef<Function | undefined>(undefined);
+  const [serverId, setServerId] = useState<string | undefined>(undefined);
+  const [fluids, setFluids] = useState<Fluid[] | undefined>(undefined);
+
   useEffect(() => {
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
-    const fluids = collection(db, "fluids");
+    fluidsCollection.current = collection(db, "fluids");
   }, []);
+
+  useEffect(() => {
+    console.log("serverId changed");
+    if (!fluidsCollection.current || !serverId) return;
+    if (unsubscribe.current) unsubscribe.current();
+    const fluidsQuery = query(
+      fluidsCollection.current,
+      where("serverId", "==", serverId)
+    );
+    unsubscribe.current = onSnapshot(fluidsQuery, (snapshot) => {
+      const array: Fluid[] = [];
+      snapshot.forEach((doc) => {
+        array.push(doc.data() as Fluid);
+      });
+      setFluids(array);
+    });
+  }, [serverId]);
 
   return (
     <>
-      <h1>Home</h1>
+      <Input
+        placeholder="Server ID"
+        radius="xl"
+        size="lg"
+        onChange={(event) => setServerId(event.target.value)}
+      />
+
+      {serverId !== undefined &&
+        fluids &&
+        fluids.map((thing) => <p>{thing.echo}</p>)}
     </>
   );
 }

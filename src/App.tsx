@@ -1,3 +1,4 @@
+import { MantineProvider } from "@mantine/core";
 import "./style.scss";
 
 type Props = {
@@ -5,5 +6,23 @@ type Props = {
 };
 
 export function App(props: Props) {
-  return <div className="app">{props.children}</div>;
+  return (
+    <MantineProvider
+      withGlobalStyles
+      withNormalizeCSS
+      theme={{
+        fontFamily: "Roboto",
+        colorScheme: "dark",
+        fontSizes: {
+          xs: 10,
+          sm: 12,
+          md: 14,
+          lg: 16,
+          xl: 20,
+        },
+      }}
+    >
+      <div className="app">{props.children}</div>
+    </MantineProvider>
+  );
 }
