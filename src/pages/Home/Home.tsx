@@ -14,14 +14,11 @@ import {
   addDoc,
   getDocs,
 } from "firebase/firestore";
+import { Analytics, getAnalytics } from "firebase/analytics";
 import { Table, Input } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
-import {
-  hideNotification,
-  showNotification,
-  updateNotification,
-} from "@mantine/notifications";
+import { showNotification, updateNotification } from "@mantine/notifications";
 import "./style.scss";
 import "../../styles/icons.scss";
 
@@ -44,22 +41,12 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
-interface Edit {
-  id: string;
-  uid: string;
-  last: Date;
-  [key: string]: string | Date;
-}
-
 export function Home() {
   const fluidsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
-  const editsCollection = useRef<
-    CollectionReference<DocumentData> | undefined
-  >();
-  const edits = useRef<Edit[] | undefined>();
   const unsubscribe = useRef<Function | undefined>();
+  const analytics = useRef<Analytics | undefined>();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
@@ -67,26 +54,13 @@ export function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("USER IS", user);
     if (!user) return navigate("/login");
 
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
+    analytics.current = getAnalytics(app);
     fluidsCollection.current = collection(db, "fluids");
-    editsCollection.current = collection(db, "edits");
-
-    const editsQuery = query(
-      editsCollection.current,
-      where("uid", "==", user.id)
-    );
-    onSnapshot(editsQuery, (snapshot) => {
-      edits.current = [];
-      snapshot.forEach((doc) => {
-        edits.current!!.push({
-          id: doc.id,
-          ...doc.data(),
-        } as Edit);
-      });
-    });
   }, []);
 
   useEffect(() => {
@@ -112,7 +86,7 @@ export function Home() {
     return fluid.solid || (!!toSync && toSync !== fluid.id);
   }
 
-  async function createFluid() {
+  function createFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
@@ -121,21 +95,27 @@ export function Home() {
       message: "Creating document...",
       loading: true,
     });
-    await addDoc(fluidsCollection.current, {
+    addDoc(fluidsCollection.current, {
       cause: "you're",
       echo: "gay",
       rank: 1,
       serverId: serverId,
       solid: false,
       uid: user.id,
-    }).catch(() => {
-      updateNotification({
-        id: "create",
-        message: "Failed to create document",
-        color: "red",
+    })
+      .then(() => {
+        updateNotification({
+          id: "create",
+          message: "Created comment",
+        });
+      })
+      .catch(() => {
+        updateNotification({
+          id: "create",
+          message: "Failed to create document",
+          color: "red",
+        });
       });
-    });
-    hideNotification("create");
   }
 
   function changeFluid(
@@ -153,7 +133,7 @@ export function Home() {
     setToSync(id);
   }
 
-  async function syncFluid() {
+  function syncFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current || !toSync || !fluids) return;
 
@@ -166,22 +146,28 @@ export function Home() {
     const fluidDoc = doc(fluidsCollection.current!!, toSync);
     if (!fluid) return;
 
-    await updateDoc(fluidDoc, {
+    updateDoc(fluidDoc, {
       cause: fluid.cause,
       echo: fluid.echo,
       rank: fluid.rank,
       serverId: fluid.serverId,
       uid: user.id,
-    }).catch(() => {
-      updateNotification({
-        id: "update",
-        message: "Failed to update document",
-        color: "red",
+    })
+      .then(() => {
+        updateNotification({
+          id: "create",
+          message: "Updated document",
+        });
+        setToSync(undefined);
+      })
+      .catch(() => {
+        updateNotification({
+          id: "update",
+          message: "Failed to update document",
+          color: "red",
+        });
+        setToSync(undefined);
       });
-      setToSync(undefined);
-    });
-    hideNotification("update");
-    setToSync(undefined);
   }
 
   async function resetFluids() {
@@ -203,7 +189,7 @@ export function Home() {
     setToSync(undefined);
   }
 
-  async function deleteFluid(id: string) {
+  function deleteFluid(id: string) {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
@@ -213,23 +199,32 @@ export function Home() {
       message: "Deleting document...",
       loading: true,
     });
-    await updateDoc(fluidDoc, {
+    updateDoc(fluidDoc, {
       uid: user.id,
-    }).catch(() => {
-      updateNotification({
-        id: "delete",
-        message: "Failed to delete document",
-        color: "red",
+    })
+      .then(() => {
+        deleteDoc(fluidDoc)
+          .then(() => {
+            updateNotification({
+              id: "delete",
+              message: "Deleted document",
+            });
+          })
+          .catch(() => {
+            updateNotification({
+              id: "delete",
+              message: "Failed to delete document",
+              color: "red",
+            });
+          });
+      })
+      .catch(() => {
+        updateNotification({
+          id: "delete",
+          message: "Failed to delete document",
+          color: "red",
+        });
       });
-    });
-    await deleteDoc(fluidDoc).catch(() => {
-      updateNotification({
-        id: "delete",
-        message: "Failed to delete document",
-        color: "red",
-      });
-    });
-    hideNotification("delete");
   }
 
   return (

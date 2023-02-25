@@ -13,7 +13,10 @@ export function useUser(): [User | undefined, Function] {
         }
       : undefined,
     (value: string) => {
-      setCookie("user", value);
+      setCookie("user", value, {
+        path: "/",
+        secure: true,
+      });
     },
   ];
 }

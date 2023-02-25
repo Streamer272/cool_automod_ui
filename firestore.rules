@@ -3,8 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function editReady(request) {
       return !exists(/databases/$(database)/documents/edits/$(request.resource.data.uid)) ||
-              int(get(/databases/$(database)/documents/edits/$(request.resource.data.uid)).data.last) / 1000 / 60 / 60 / 24 !=
-              request.time.toMillis() / 1000 / 60 / 60 / 24;
+              int(int(get(/databases/$(database)/documents/edits/$(request.resource.data.uid)).data.last) / 1000 / 60 / 60 / 24) !=
+              int(request.time.toMillis() / 1000 / 60 / 60 / 24);
     }
 
     match /{document=**} {
