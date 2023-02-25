@@ -12,10 +12,9 @@ import {
   updateDoc,
   deleteDoc,
   addDoc,
+  getDocs,
 } from "firebase/firestore";
-import * as core from "@mantine/core";
-import "./style.scss";
-import "../../styles/icons.scss";
+import { Table, Input } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
 import {
@@ -23,6 +22,8 @@ import {
   showNotification,
   updateNotification,
 } from "@mantine/notifications";
+import "./style.scss";
+import "../../styles/icons.scss";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -111,7 +112,7 @@ export function Home() {
     return fluid.solid || (!!toSync && toSync !== fluid.id);
   }
 
-  function createFluid() {
+  async function createFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
@@ -120,24 +121,21 @@ export function Home() {
       message: "Creating document...",
       loading: true,
     });
-    addDoc(fluidsCollection.current, {
+    await addDoc(fluidsCollection.current, {
       cause: "you're",
       echo: "gay",
       rank: 1,
       serverId: serverId,
       solid: false,
       uid: user.id,
-    })
-      .then(() => {
-        hideNotification("create");
-      })
-      .catch(() => {
-        updateNotification({
-          id: "create",
-          message: "Failed to create document",
-          color: "red",
-        });
+    }).catch(() => {
+      updateNotification({
+        id: "create",
+        message: "Failed to create document",
+        color: "red",
       });
+    });
+    hideNotification("create");
   }
 
   function changeFluid(
@@ -155,7 +153,7 @@ export function Home() {
     setToSync(id);
   }
 
-  function syncFluid() {
+  async function syncFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current || !toSync || !fluids) return;
 
@@ -168,26 +166,41 @@ export function Home() {
     const fluidDoc = doc(fluidsCollection.current!!, toSync);
     if (!fluid) return;
 
-    updateDoc(fluidDoc, {
+    await updateDoc(fluidDoc, {
       cause: fluid.cause,
       echo: fluid.echo,
       rank: fluid.rank,
       serverId: fluid.serverId,
       uid: user.id,
-    })
-      .then(() => {
-        hideNotification("update");
-      })
-      .catch(() => {
-        updateNotification({
-          id: "update",
-          message: "Failed to update document",
-          color: "red",
-        });
-      })
-      .finally(() => {
-        setToSync(undefined);
+    }).catch(() => {
+      updateNotification({
+        id: "update",
+        message: "Failed to update document",
+        color: "red",
       });
+      setToSync(undefined);
+    });
+    hideNotification("update");
+    setToSync(undefined);
+  }
+
+  async function resetFluids() {
+    if (!fluidsCollection.current || !serverId) return;
+
+    const fluidsQuery = query(
+      fluidsCollection.current,
+      where("serverId", "==", serverId)
+    );
+    const snapshot = await getDocs(fluidsQuery);
+    const array: Fluid[] = [];
+    snapshot.forEach((doc) => {
+      array.push({
+        id: doc.id,
+        ...doc.data(),
+      } as Fluid);
+    });
+    setFluids(array);
+    setToSync(undefined);
   }
 
   async function deleteFluid(id: string) {
@@ -200,34 +213,28 @@ export function Home() {
       message: "Deleting document...",
       loading: true,
     });
-    updateDoc(fluidDoc, {
+    await updateDoc(fluidDoc, {
       uid: user.id,
-    })
-      .then(() => {
-        deleteDoc(fluidDoc)
-          .then(() => {
-            hideNotification("delete");
-          })
-          .catch(() => {
-            updateNotification({
-              id: "delete",
-              message: "Failed to delete document",
-              color: "red",
-            });
-          });
-      })
-      .catch(() => {
-        updateNotification({
-          id: "delete",
-          message: "Failed to delete document",
-          color: "red",
-        });
+    }).catch(() => {
+      updateNotification({
+        id: "delete",
+        message: "Failed to delete document",
+        color: "red",
       });
+    });
+    await deleteDoc(fluidDoc).catch(() => {
+      updateNotification({
+        id: "delete",
+        message: "Failed to delete document",
+        color: "red",
+      });
+    });
+    hideNotification("delete");
   }
 
   return (
     <div className="home">
-      <core.Input
+      <Input
         placeholder="Server ID"
         radius="xl"
         size="lg"
@@ -237,7 +244,7 @@ export function Home() {
 
       {!!serverId && !!fluids && (
         <>
-          <core.Table
+          <Table
             highlightOnHover
             withColumnBorders
             fontSize={"md"}
@@ -320,13 +327,18 @@ export function Home() {
                 </tr>
               ))}
             </tbody>
-          </core.Table>
+          </Table>
 
           <div className="buttons">
             {toSync && (
-              <button onClick={syncFluid}>
-                <span className="material-symbols-outlined">save</span>
-              </button>
+              <>
+                <button onClick={resetFluids}>
+                  <span className="material-symbols-outlined">restart_alt</span>
+                </button>
+                <button onClick={syncFluid}>
+                  <span className="material-symbols-outlined">save</span>
+                </button>
+              </>
             )}
             <button onClick={createFluid}>
               <span className="material-symbols-outlined">add</span>
