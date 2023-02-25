@@ -143,93 +143,96 @@ export function Home() {
       />
 
       {!!serverId && !!fluids && (
-        <Table
-          highlightOnHover
-          withColumnBorders
-          fontSize={"md"}
-          horizontalSpacing={"lg"}
-          verticalSpacing={"sm"}
-          className="table"
-        >
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cause</th>
-              <th>Echo</th>
-              <th>Rank</th>
-              <th>Server ID</th>
-              <th>Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fluids.map((fluid) => (
-              <tr key={fluid.id}>
-                <td>{fluid.id}</td>
-                <td>
-                  <input
-                    value={fluid.cause}
-                    placeholder="Cause"
-                    className="editable"
-                    disabled={fluid.solid}
-                    onChange={(event) =>
-                      changeFluid(fluid.id, "cause", event.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <input
-                    value={fluid.echo}
-                    placeholder="Echo"
-                    className="editable"
-                    disabled={fluid.solid}
-                    onChange={(event) =>
-                      changeFluid(fluid.id, "echo", event.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <input
-                    value={fluid.rank}
-                    placeholder="Rank"
-                    className="editable"
-                    disabled={fluid.solid}
-                    onChange={(event) =>
-                      !isNaN(+event.target.value) &&
-                      changeFluid(fluid.id, "rank", +event.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <input
-                    value={fluid.serverId}
-                    placeholder="Server ID"
-                    className="editable"
-                    disabled={fluid.solid}
-                    onChange={(event) =>
-                      changeFluid(fluid.id, "serverId", event.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <div className="delete">
-                    <button
-                      className="delete"
-                      disabled={fluid.solid}
-                      onClick={() => deleteFluid(fluid.id)}
-                    >
-                      <span className="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </td>
+        <>
+          <Table
+            highlightOnHover
+            withColumnBorders
+            fontSize={"md"}
+            horizontalSpacing={"lg"}
+            verticalSpacing={"sm"}
+            className="table"
+          >
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cause</th>
+                <th>Echo</th>
+                <th>Rank</th>
+                <th>Server ID</th>
+                <th>Delete</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {fluids.map((fluid) => (
+                <tr key={fluid.id}>
+                  <td>{fluid.id}</td>
+                  <td>
+                    <input
+                      value={fluid.cause}
+                      placeholder="Cause"
+                      className="editable"
+                      disabled={fluid.solid}
+                      onChange={(event) =>
+                        changeFluid(fluid.id, "cause", event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.echo}
+                      placeholder="Echo"
+                      className="editable"
+                      disabled={fluid.solid}
+                      onChange={(event) =>
+                        changeFluid(fluid.id, "echo", event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.rank}
+                      placeholder="Rank"
+                      className="editable"
+                      disabled={fluid.solid}
+                      onChange={(event) =>
+                        !isNaN(+event.target.value) &&
+                        changeFluid(fluid.id, "rank", +event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={fluid.serverId}
+                      placeholder="Server ID"
+                      className="editable"
+                      disabled={fluid.solid}
+                      onChange={(event) =>
+                        changeFluid(fluid.id, "serverId", event.target.value)
+                      }
+                    />
+                  </td>
+                  <td>
+                    <div className="delete">
+                      <button
+                        className="delete"
+                        disabled={fluid.solid}
+                        onClick={() => deleteFluid(fluid.id)}
+                      >
+                        <span className="material-symbols-outlined">
+                          delete
+                        </span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <button className="add" onClick={createFluid}>
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        </>
       )}
-
-      <button className="add" onClick={createFluid}>
-        <span className="material-symbols-outlined">add</span>
-      </button>
 
       {syncing && (
         <Notification loading title={"Syncing..."} className="sync" />
