@@ -14,7 +14,7 @@ import {
   addDoc,
   getDocs,
 } from "firebase/firestore";
-import { Analytics, getAnalytics } from "firebase/analytics";
+import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
 import { Table, Input } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +54,6 @@ export function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("USER IS", user);
     if (!user) return navigate("/login");
 
     const app = initializeApp(FIREBASE_CONFIG);
@@ -66,6 +65,11 @@ export function Home() {
   useEffect(() => {
     if (!fluidsCollection.current || !serverId) return;
     if (unsubscribe.current) unsubscribe.current();
+    if (analytics.current)
+      logEvent(analytics.current, "select_item", {
+        serverId: serverId,
+      });
+
     const fluidsQuery = query(
       fluidsCollection.current,
       where("serverId", "==", serverId)
