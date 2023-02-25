@@ -7,9 +7,13 @@ service cloud.firestore {
 
     match /fluids/{docId} {
       allow read: if true;
-      allow create: if !request.resource.data.solid;
-      allow update: if !request.resource.data.solid && !resource.data.solid;
+      allow create: if !request.resource.data.solid && "id" in request.resource.data;
+      allow update: if !request.resource.data.solid && !resource.data.solid && "id" in request.resource.data;
       allow delete: if !resource.data.solid;
+    }
+
+    match /edits/{docId} {
+      allow read: if true;
     }
   }
 }

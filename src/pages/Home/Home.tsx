@@ -12,10 +12,13 @@ import {
   updateDoc,
   deleteDoc,
   addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { Input, Notification, Table } from "@mantine/core";
 import "./style.scss";
 import "../../styles/icons.scss";
+import { useUser } from "../../hooks/useUser";
+import { useNavigate } from "react-router-dom";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -36,21 +39,51 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
+interface Edit {
+  id: string;
+  uid: string;
+  last: Date;
+  [key: string]: string | Date;
+}
+
 export function Home() {
   const fluidsCollection = useRef<
+    CollectionReference<DocumentData> | undefined
+  >();
+  const editsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
   const unsubscribe = useRef<Function | undefined>();
   const changeTimeout = useRef<NodeJS.Timeout | undefined>();
   const toSync = useRef<string[]>([]);
+  const edits = useRef<Edit[] | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
   const [syncing, setSyncing] = useState<boolean>(false);
+  const [user] = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (!user) return navigate("/login");
+
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
     fluidsCollection.current = collection(db, "fluids");
+    editsCollection.current = collection(db, "edits");
+
+    const editsQuery = query(
+      editsCollection.current,
+      where("uid", "==", user.id)
+    );
+    onSnapshot(editsQuery, (snapshot) => {
+      edits.current = [];
+      snapshot.forEach((doc) => {
+        edits.current!!.push({
+          id: doc.id,
+          ...doc.data(),
+        } as Edit);
+      });
+    });
   }, []);
 
   useEffect(() => {
@@ -73,6 +106,7 @@ export function Home() {
   }, [serverId]);
 
   async function createFluid() {
+    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
     setSyncing(true);
@@ -82,6 +116,7 @@ export function Home() {
       rank: 1,
       serverId: serverId,
       solid: false,
+      uid: user.id,
     });
     setSyncing(false);
   }
@@ -91,6 +126,7 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
+    if (!user) return navigate("/login");
     if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
     if (fluidIndex < 0) return;
@@ -102,6 +138,7 @@ export function Home() {
 
     if (changeTimeout.current) clearTimeout(changeTimeout.current);
     changeTimeout.current = setTimeout(async () => {
+      if (!user) return navigate("/login");
       if (!fluidsCollection.current) return;
 
       setSyncing(true);
@@ -116,6 +153,7 @@ export function Home() {
             echo: fluid.echo,
             rank: fluid.rank,
             serverId: fluid.serverId,
+            uid: user.id,
           });
         })
       );
@@ -125,10 +163,15 @@ export function Home() {
   }
 
   async function deleteFluid(id: string) {
+    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
+    const fluidDoc = doc(fluidsCollection.current, id);
     setSyncing(true);
-    await deleteDoc(doc(fluidsCollection.current, id));
+    await updateDoc(fluidDoc, {
+      uid: user.id,
+    });
+    await deleteDoc(fluidDoc);
     setSyncing(false);
   }
 
