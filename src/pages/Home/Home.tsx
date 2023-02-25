@@ -13,7 +13,7 @@ import {
   deleteDoc,
   addDoc,
 } from "firebase/firestore";
-import { Input, Notification, Table } from "@mantine/core";
+import * as core from "@mantine/core";
 import "./style.scss";
 import "../../styles/icons.scss";
 import { useUser } from "../../hooks/useUser";
@@ -57,10 +57,9 @@ export function Home() {
   const editsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
-  const unsubscribe = useRef<Function | undefined>();
-  const changeTimeout = useRef<NodeJS.Timeout | undefined>();
-  const toSync = useRef<string[]>([]);
   const edits = useRef<Edit[] | undefined>();
+  const unsubscribe = useRef<Function | undefined>();
+  const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
   const [user] = useUser();
@@ -108,6 +107,10 @@ export function Home() {
     });
   }, [serverId]);
 
+  function getDisabled(fluid: Fluid): boolean {
+    return fluid.solid || (!!toSync && toSync !== fluid.id);
+  }
+
   function createFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
@@ -142,56 +145,49 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
-    // TODO: only allow changing 1 doc at a time
     if (!user) return navigate("/login");
     if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
-    if (fluidIndex < 0) return;
+    if (fluidIndex < 0 || (toSync && toSync !== id)) return;
 
-    const temp = [...fluids];
-    temp[fluidIndex][key] = value;
-    setFluids(temp);
-    if (!toSync.current.includes(id)) toSync.current.push(id);
+    fluids[fluidIndex][key] = value;
+    setFluids([...fluids]);
+    setToSync(id);
+  }
 
-    if (changeTimeout.current) clearTimeout(changeTimeout.current);
-    changeTimeout.current = setTimeout(() => {
-      if (!user) return navigate("/login");
-      if (!fluidsCollection.current) return;
+  function syncFluid() {
+    if (!user) return navigate("/login");
+    if (!fluidsCollection.current || !toSync || !fluids) return;
 
-      showNotification({
-        id: "update",
-        message: "Updating document...",
-        loading: true,
-      });
-      Promise.all(
-        toSync.current.map((id: string) => {
-          const fluid = fluids.find((fluid) => fluid.id === id);
-          const fluidDoc = doc(fluidsCollection.current!!, id);
-          if (!fluid) return;
+    showNotification({
+      id: "update",
+      message: "Updating document...",
+      loading: true,
+    });
+    const fluid = fluids.find((fluid) => fluid.id === toSync);
+    const fluidDoc = doc(fluidsCollection.current!!, toSync);
+    if (!fluid) return;
 
-          return updateDoc(fluidDoc, {
-            cause: fluid.cause,
-            echo: fluid.echo,
-            rank: fluid.rank,
-            serverId: fluid.serverId,
-            uid: user.id,
-          });
-        })
-      )
-        .then(() => {
-          hideNotification("update");
-        })
-        .catch(() => {
-          updateNotification({
-            id: "update",
-            message: "Failed to update document",
-            color: "red",
-          });
-        })
-        .finally(() => {
-          toSync.current = [];
+    updateDoc(fluidDoc, {
+      cause: fluid.cause,
+      echo: fluid.echo,
+      rank: fluid.rank,
+      serverId: fluid.serverId,
+      uid: user.id,
+    })
+      .then(() => {
+        hideNotification("update");
+      })
+      .catch(() => {
+        updateNotification({
+          id: "update",
+          message: "Failed to update document",
+          color: "red",
         });
-    }, 1500);
+      })
+      .finally(() => {
+        setToSync(undefined);
+      });
   }
 
   async function deleteFluid(id: string) {
@@ -231,7 +227,7 @@ export function Home() {
 
   return (
     <div className="home">
-      <Input
+      <core.Input
         placeholder="Server ID"
         radius="xl"
         size="lg"
@@ -241,7 +237,7 @@ export function Home() {
 
       {!!serverId && !!fluids && (
         <>
-          <Table
+          <core.Table
             highlightOnHover
             withColumnBorders
             fontSize={"md"}
@@ -268,7 +264,7 @@ export function Home() {
                       value={fluid.cause}
                       placeholder="Cause"
                       className="editable"
-                      disabled={fluid.solid}
+                      disabled={getDisabled(fluid)}
                       onChange={(event) =>
                         changeFluid(fluid.id, "cause", event.target.value)
                       }
@@ -279,7 +275,7 @@ export function Home() {
                       value={fluid.echo}
                       placeholder="Echo"
                       className="editable"
-                      disabled={fluid.solid}
+                      disabled={getDisabled(fluid)}
                       onChange={(event) =>
                         changeFluid(fluid.id, "echo", event.target.value)
                       }
@@ -290,7 +286,7 @@ export function Home() {
                       value={fluid.rank}
                       placeholder="Rank"
                       className="editable"
-                      disabled={fluid.solid}
+                      disabled={getDisabled(fluid)}
                       onChange={(event) =>
                         !isNaN(+event.target.value) &&
                         changeFluid(fluid.id, "rank", +event.target.value)
@@ -302,7 +298,7 @@ export function Home() {
                       value={fluid.serverId}
                       placeholder="Server ID"
                       className="editable"
-                      disabled={fluid.solid}
+                      disabled={getDisabled(fluid)}
                       onChange={(event) =>
                         changeFluid(fluid.id, "serverId", event.target.value)
                       }
@@ -312,7 +308,7 @@ export function Home() {
                     <div className="delete">
                       <button
                         className="delete"
-                        disabled={fluid.solid}
+                        disabled={getDisabled(fluid)}
                         onClick={() => deleteFluid(fluid.id)}
                       >
                         <span className="material-symbols-outlined">
@@ -324,10 +320,18 @@ export function Home() {
                 </tr>
               ))}
             </tbody>
-          </Table>
-          <button className="add" onClick={createFluid}>
-            <span className="material-symbols-outlined">add</span>
-          </button>
+          </core.Table>
+
+          <div className="buttons">
+            {toSync && (
+              <button onClick={syncFluid}>
+                <span className="material-symbols-outlined">save</span>
+              </button>
+            )}
+            <button onClick={createFluid}>
+              <span className="material-symbols-outlined">add</span>
+            </button>
+          </div>
         </>
       )}
     </div>
