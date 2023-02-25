@@ -11,8 +11,9 @@ import {
   where,
   updateDoc,
   deleteDoc,
+  addDoc,
 } from "firebase/firestore";
-import { Input, Loader, Table } from "@mantine/core";
+import { Input, Notification, Table } from "@mantine/core";
 import "./style.scss";
 import "../../styles/icons.scss";
 
@@ -71,14 +72,26 @@ export function Home() {
     });
   }, [serverId]);
 
-  function createFluid() {}
+  async function createFluid() {
+    if (!fluidsCollection.current) return;
+
+    setSyncing(true);
+    await addDoc(fluidsCollection.current, {
+      cause: "you're",
+      echo: "gay",
+      rank: 1,
+      serverId: serverId,
+      solid: false,
+    });
+    setSyncing(false);
+  }
 
   function changeFluid(
     id: string,
     key: string,
     value: string | number | boolean
   ) {
-    if (!fluids || !id) return;
+    if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
     if (fluidIndex < 0) return;
 
@@ -214,7 +227,13 @@ export function Home() {
         </Table>
       )}
 
-      {syncing && <Loader className="sync" />}
+      <button className="add" onClick={createFluid}>
+        <span className="material-symbols-outlined">add</span>
+      </button>
+
+      {syncing && (
+        <Notification loading title={"Syncing..."} className="sync" />
+      )}
     </div>
   );
 }
