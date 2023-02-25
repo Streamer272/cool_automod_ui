@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "emulators": "cd functions && npm run build && cd .. && firebase emulators:start"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",

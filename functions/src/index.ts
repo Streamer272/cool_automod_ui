@@ -5,14 +5,6 @@ admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
 
-// // Start writing functions
-// // https://firebase.google.com/docs/functions/typescript
-//
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-
 export const markEdit = functions.firestore
   .document("/fluids/{docId}")
   .onWrite(async (snap, context) => {
@@ -37,7 +29,7 @@ export const markEdit = functions.firestore
         last: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-    return editsCollection.doc(edit.docs[0].id).set({
+    return editsCollection.doc(edit.docs[0].id).update({
       last: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
