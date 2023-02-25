@@ -18,7 +18,11 @@ import "./style.scss";
 import "../../styles/icons.scss";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
-import { hideNotification, showNotification } from "@mantine/notifications";
+import {
+  hideNotification,
+  showNotification,
+  updateNotification,
+} from "@mantine/notifications";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -104,7 +108,7 @@ export function Home() {
     });
   }, [serverId]);
 
-  async function createFluid() {
+  function createFluid() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
@@ -113,15 +117,24 @@ export function Home() {
       message: "Creating document...",
       loading: true,
     });
-    await addDoc(fluidsCollection.current, {
+    addDoc(fluidsCollection.current, {
       cause: "you're",
       echo: "gay",
       rank: 1,
       serverId: serverId,
       solid: false,
       uid: user.id,
-    });
-    hideNotification("create");
+    })
+      .then(() => {
+        hideNotification("create");
+      })
+      .catch(() => {
+        updateNotification({
+          id: "create",
+          message: "Failed to create document",
+          color: "red",
+        });
+      });
   }
 
   function changeFluid(
@@ -141,7 +154,7 @@ export function Home() {
     if (!toSync.current.includes(id)) toSync.current.push(id);
 
     if (changeTimeout.current) clearTimeout(changeTimeout.current);
-    changeTimeout.current = setTimeout(async () => {
+    changeTimeout.current = setTimeout(() => {
       if (!user) return navigate("/login");
       if (!fluidsCollection.current) return;
 
@@ -150,7 +163,7 @@ export function Home() {
         message: "Updating document...",
         loading: true,
       });
-      await Promise.all(
+      Promise.all(
         toSync.current.map((id: string) => {
           const fluid = fluids.find((fluid) => fluid.id === id);
           const fluidDoc = doc(fluidsCollection.current!!, id);
@@ -164,9 +177,20 @@ export function Home() {
             uid: user.id,
           });
         })
-      );
-      hideNotification("update");
-      toSync.current = [];
+      )
+        .then(() => {
+          hideNotification("update");
+        })
+        .catch(() => {
+          updateNotification({
+            id: "update",
+            message: "Failed to update document",
+            color: "red",
+          });
+        })
+        .finally(() => {
+          toSync.current = [];
+        });
     }, 1500);
   }
 
@@ -180,11 +204,29 @@ export function Home() {
       message: "Deleting document...",
       loading: true,
     });
-    await updateDoc(fluidDoc, {
+    updateDoc(fluidDoc, {
       uid: user.id,
-    });
-    await deleteDoc(fluidDoc);
-    hideNotification("delete");
+    })
+      .then(() => {
+        deleteDoc(fluidDoc)
+          .then(() => {
+            hideNotification("delete");
+          })
+          .catch(() => {
+            updateNotification({
+              id: "delete",
+              message: "Failed to delete document",
+              color: "red",
+            });
+          });
+      })
+      .catch(() => {
+        updateNotification({
+          id: "delete",
+          message: "Failed to delete document",
+          color: "red",
+        });
+      });
   }
 
   return (
