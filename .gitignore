@@ -3,3 +3,4 @@
 /.fleet
 /dist
 yarn*.lock
+*-debug.log

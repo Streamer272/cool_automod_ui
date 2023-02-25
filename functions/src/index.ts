@@ -21,15 +21,10 @@ export const markEdit = functions.firestore
       return Promise.reject("UID not found");
     }
 
-    const edit = await editsCollection.where("uid", "==", uid).limit(1).get();
-    if (edit.empty) {
-      functions.logger.log("Empty edit snapshot");
-      return editsCollection.add({
-        uid: uid,
-        last: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
-    return editsCollection.doc(edit.docs[0].id).update({
-      last: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    return editsCollection.doc(uid).set(
+      {
+        last: Date.now().toString(),
+      },
+      { merge: true }
+    );
   });

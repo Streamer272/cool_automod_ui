@@ -1,5 +1,6 @@
 import { MantineProvider } from "@mantine/core";
 import "./style.scss";
+import { NotificationsProvider } from "@mantine/notifications";
 
 type Props = {
   children: JSX.Element | JSX.Element[];
@@ -22,7 +23,9 @@ export function App(props: Props) {
         },
       }}
     >
-      <div className="app">{props.children}</div>
+      <NotificationsProvider position="top-right" zIndex={2}>
+        <div className="app">{props.children}</div>
+      </NotificationsProvider>
     </MantineProvider>
   );
 }

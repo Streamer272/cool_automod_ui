@@ -12,13 +12,13 @@ import {
   updateDoc,
   deleteDoc,
   addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import { Input, Notification, Table } from "@mantine/core";
 import "./style.scss";
 import "../../styles/icons.scss";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
+import { hideNotification, showNotification } from "@mantine/notifications";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
@@ -59,7 +59,6 @@ export function Home() {
   const edits = useRef<Edit[] | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
-  const [syncing, setSyncing] = useState<boolean>(false);
   const [user] = useUser();
   const navigate = useNavigate();
 
@@ -109,7 +108,11 @@ export function Home() {
     if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
-    setSyncing(true);
+    showNotification({
+      id: "create",
+      message: "Creating document...",
+      loading: true,
+    });
     await addDoc(fluidsCollection.current, {
       cause: "you're",
       echo: "gay",
@@ -118,7 +121,7 @@ export function Home() {
       solid: false,
       uid: user.id,
     });
-    setSyncing(false);
+    hideNotification("create");
   }
 
   function changeFluid(
@@ -126,6 +129,7 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
+    // TODO: only allow changing 1 doc at a time
     if (!user) return navigate("/login");
     if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
@@ -141,7 +145,11 @@ export function Home() {
       if (!user) return navigate("/login");
       if (!fluidsCollection.current) return;
 
-      setSyncing(true);
+      showNotification({
+        id: "update",
+        message: "Updating document...",
+        loading: true,
+      });
       await Promise.all(
         toSync.current.map((id: string) => {
           const fluid = fluids.find((fluid) => fluid.id === id);
@@ -157,9 +165,9 @@ export function Home() {
           });
         })
       );
-      setSyncing(false);
+      hideNotification("update");
       toSync.current = [];
-    }, 1000);
+    }, 1500);
   }
 
   async function deleteFluid(id: string) {
@@ -167,12 +175,16 @@ export function Home() {
     if (!fluidsCollection.current) return;
 
     const fluidDoc = doc(fluidsCollection.current, id);
-    setSyncing(true);
+    showNotification({
+      id: "delete",
+      message: "Deleting document...",
+      loading: true,
+    });
     await updateDoc(fluidDoc, {
       uid: user.id,
     });
     await deleteDoc(fluidDoc);
-    setSyncing(false);
+    hideNotification("delete");
   }
 
   return (
@@ -275,10 +287,6 @@ export function Home() {
             <span className="material-symbols-outlined">add</span>
           </button>
         </>
-      )}
-
-      {syncing && (
-        <Notification loading title={"Syncing..."} className="sync" />
       )}
     </div>
   );

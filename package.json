@@ -7,12 +7,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "emulators": "cd functions && npm run build && cd .. && firebase emulators:start"
+    "emulators": "npm --prefix ./functions run build && firebase emulators:start"
   },
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@mantine/core": "^5.10.4",
     "@mantine/hooks": "^5.10.4",
+    "@mantine/notifications": "^5.10.4",
     "firebase": "^9.17.1",
     "react": "^18.2.0",
     "react-cookie": "^4.1.1",
