@@ -12,7 +12,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { useUser } from "../../hooks/useUser";
-import { Button, Input, Table } from "@mantine/core";
+import { Button, Checkbox, Input, Table } from "@mantine/core";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
 import { useFirebase } from "../../hooks/useFirebase";
@@ -26,6 +26,7 @@ interface Fluid {
   cause: string;
   echo: string;
   rank: number;
+  caseSensitive: boolean;
   serverId: string;
   solid: boolean;
   [key: string]: string | number | boolean;
@@ -143,7 +144,7 @@ export function Home() {
           message: "Edit refilled",
         });
       })
-      .catch((e) => {
+      .catch((_) => {
         updateNotification({
           id: "refill",
           message: "Couldn't refill",
@@ -188,6 +189,7 @@ export function Home() {
       cause: "you're",
       echo: "gay",
       rank: 1,
+      caseSensitive: false,
       serverId: serverId,
       solid: false,
       uid: user!!.id,
@@ -253,6 +255,7 @@ export function Home() {
       cause: fluid.cause,
       echo: fluid.echo,
       rank: fluid.rank,
+      caseSensitive: fluid.caseSensitive,
       serverId: fluid.serverId,
       uid: user!!.id,
     })
@@ -362,6 +365,7 @@ export function Home() {
                 <th>Cause</th>
                 <th>Echo</th>
                 <th>Rank</th>
+                <th>Case Sensitive</th>
                 <th>Server ID</th>
                 <th>Delete</th>
               </tr>
@@ -401,6 +405,20 @@ export function Home() {
                       onChange={(event) =>
                         !isNaN(+event.target.value) &&
                         changeFluid(fluid.id, "rank", +event.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="centered">
+                    <Checkbox
+                      checked={fluid.caseSensitive}
+                      placeholder="Case Sensitive"
+                      disabled={getDisabled(fluid)}
+                      onChange={(event) =>
+                        changeFluid(
+                          fluid.id,
+                          "caseSensitive",
+                          event.target.checked
+                        )
                       }
                     />
                   </td>
