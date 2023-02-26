@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { initializeApp } from "firebase/app";
 import {
-  CollectionReference,
-  DocumentData,
-  collection,
   doc,
-  getFirestore,
   onSnapshot,
   query,
   where,
@@ -14,24 +9,16 @@ import {
   addDoc,
   getDocs,
 } from "firebase/firestore";
-import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
+import { useFirebase } from "../../hooks/useFirebase";
+import { logEvent } from "firebase/analytics";
 import axios from "axios";
 import "./style.scss";
 import "../../styles/icons.scss";
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
-  authDomain: "automod-5f5ab.firebaseapp.com",
-  projectId: "automod-5f5ab",
-  storageBucket: "automod-5f5ab.appspot.com",
-  messagingSenderId: "443774039339",
-  appId: "1:443774039339:web:23009675563b39bfdcc16e",
-};
 
 interface Fluid {
   id: string;
@@ -44,14 +31,8 @@ interface Fluid {
 }
 
 export function Home() {
-  const fluidsCollection = useRef<
-    CollectionReference<DocumentData> | undefined
-  >();
-  const editsCollection = useRef<
-    CollectionReference<DocumentData> | undefined
-  >();
+  const { fluidsCollection, editsCollection, analytics } = useFirebase();
   const unsubscribe = useRef<Function | undefined>();
-  const analytics = useRef<Analytics | undefined>();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
@@ -60,21 +41,16 @@ export function Home() {
 
   useEffect(() => {
     if (!user) return navigate("/login");
-
-    const app = initializeApp(FIREBASE_CONFIG);
-    const db = getFirestore(app);
-    analytics.current = getAnalytics(app);
-    fluidsCollection.current = collection(db, "fluids");
-    editsCollection.current = collection(db, "edits");
   }, []);
 
   useEffect(() => {
     if (!fluidsCollection.current || !serverId) return;
     if (unsubscribe.current) unsubscribe.current();
-    if (analytics.current)
+    if (analytics.current) {
       logEvent(analytics.current, "select_item", {
         serverId: serverId,
       });
+    }
 
     const fluidsQuery = query(
       fluidsCollection.current,
@@ -101,7 +77,9 @@ export function Home() {
     window.location = response.data.url;
   }
 
-  async function useRefill() {}
+  async function useRefill() {
+    // TODO
+  }
 
   function createFluid() {
     if (!user) return navigate("/login");
