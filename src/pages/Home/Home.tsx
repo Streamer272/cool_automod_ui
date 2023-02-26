@@ -15,7 +15,8 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
-import { Table, Input } from "@mantine/core";
+import { HttpsCallable, getFunctions, httpsCallable } from "firebase/functions";
+import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
@@ -41,12 +42,21 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
+interface Empty {}
+
+interface StripeSession {
+  url: string;
+}
+
 export function Home() {
   const fluidsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
   const unsubscribe = useRef<Function | undefined>();
   const analytics = useRef<Analytics | undefined>();
+  const createPayment = useRef<
+    HttpsCallable<Empty, StripeSession> | undefined
+  >();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
@@ -58,7 +68,12 @@ export function Home() {
 
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
+    const functions = getFunctions(app);
     analytics.current = getAnalytics(app);
+    createPayment.current = httpsCallable<Empty, StripeSession>(
+      functions,
+      "createPayment"
+    );
     fluidsCollection.current = collection(db, "fluids");
   }, []);
 
@@ -88,6 +103,13 @@ export function Home() {
 
   function getDisabled(fluid: Fluid): boolean {
     return fluid.solid || (!!toSync && toSync !== fluid.id);
+  }
+
+  async function getMoreRefills() {
+    if (!createPayment.current) return;
+
+    const session = await createPayment.current({});
+    navigate(session.data.url);
   }
 
   function createFluid() {
@@ -345,6 +367,14 @@ export function Home() {
           </div>
         </>
       )}
+
+      <div className="refill-controls">
+        <Button size="lg">Use refill</Button>
+        <button className="get" onClick={getMoreRefills}>
+          Need more?
+          <span className="material-symbols-outlined">exposure_plus_1</span>
+        </button>
+      </div>
     </div>
   );
 }

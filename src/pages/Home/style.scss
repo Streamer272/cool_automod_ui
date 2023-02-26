@@ -1,3 +1,5 @@
+@import "../../styles/colors.scss";
+
 .home {
   display: flex;
   align-items: center;
@@ -66,10 +68,43 @@
       margin: 0;
       width: fit-content;
       height: fit-content;
-      margin: 0 .25rem;
+      margin: 0 0.25rem;
 
       span {
         font-size: 2.75rem;
+      }
+    }
+  }
+
+  .refill-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 .25rem;
+
+    .get {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 1rem;
+      color: $color-200;
+      padding: 0;
+      margin: .75rem 0 0 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+
+      span {
+        font-size: 1.2rem;
+        border: 2px solid $color-300;
+        border-radius: 2rem;
+        padding: 0.25rem;
+        margin: 0 0 0 0.5rem;
       }
     }
   }

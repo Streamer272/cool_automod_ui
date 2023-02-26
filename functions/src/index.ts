@@ -36,7 +36,7 @@ export const markEdit = functions.firestore
 
 export const preparePayment = functions
   .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
-  .https.onRequest(async (_, res) => {
+  .https.onCall(async (data, context) => {
     if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
 
     const session = await stripe.checkout.sessions.create({
@@ -56,16 +56,17 @@ export const preparePayment = functions
       success_url: `${FRONTEND_URL.value()}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL.value()}/cancel`,
     });
-    res.json({ url: session.url });
+    return { url: session.url };
   });
 
 export const completePayment = functions
   .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
-  .https.onRequest(async (req, res) => {
+  .https.onCall(async (data, context) => {
     if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
 
-    const session = await stripe.checkout.sessions.retrieve(req.query.id);
-    if (!session) res.status(404).json({ response: "Not found" });
+    const session = await stripe.checkout.sessions.retrieve(data.id);
+    if (!session)
+      throw new functions.https.HttpsError("not-found", "Not found");
     // TODO: update refill collection
-    res.json({ response: "Success" });
+    return { response: "Success" };
   });
