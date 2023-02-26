@@ -23,7 +23,7 @@ export function App(props: Props) {
         },
       }}
     >
-      <NotificationsProvider position="top-right" zIndex={2}>
+      <NotificationsProvider position="bottom-right" zIndex={2}>
         <div className="app">{props.children}</div>
       </NotificationsProvider>
     </MantineProvider>

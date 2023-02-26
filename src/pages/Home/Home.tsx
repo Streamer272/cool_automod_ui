@@ -47,6 +47,9 @@ export function Home() {
   const fluidsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
+  const editsCollection = useRef<
+    CollectionReference<DocumentData> | undefined
+  >();
   const unsubscribe = useRef<Function | undefined>();
   const analytics = useRef<Analytics | undefined>();
   const [toSync, setToSync] = useState<string | undefined>();
@@ -62,6 +65,7 @@ export function Home() {
     const db = getFirestore(app);
     analytics.current = getAnalytics(app);
     fluidsCollection.current = collection(db, "fluids");
+    editsCollection.current = collection(db, "edits");
   }, []);
 
   useEffect(() => {
@@ -96,6 +100,8 @@ export function Home() {
     const response = await axios.get(`${useBackendUrl()}/createPayment`);
     window.location = response.data.url;
   }
+
+  async function useRefill() {}
 
   function createFluid() {
     if (!user) return navigate("/login");
@@ -354,7 +360,9 @@ export function Home() {
       )}
 
       <div className="refill-controls">
-        <Button size="lg">Use refill</Button>
+        <Button size="lg" onClick={useRefill}>
+          Use refill
+        </Button>
         <button className="get" onClick={getMoreRefills}>
           Need more?
           <span className="material-symbols-outlined">exposure_plus_1</span>

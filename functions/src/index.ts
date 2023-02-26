@@ -1,12 +1,18 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { defineSecret, defineString } from "firebase-functions/params";
+import {
+  defineInt,
+  defineSecret,
+  defineString,
+} from "firebase-functions/params";
 const stripeModule = require("stripe");
 const cors = require("cors")({ origin: true });
 
 let stripe: any | undefined;
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const FRONTEND_URL = defineString("FRONTEND_URL");
+const STRIPE_PRICE_ID = defineString("STRIPE_PRICE_ID");
+const REFILLS_COUNT = defineInt("REFILLS_COUNT");
 admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
@@ -27,12 +33,13 @@ export const markEdit = functions.firestore
       return Promise.reject("UID not found");
     }
 
-    return editsCollection.doc(uid).set(
-      {
-        last: Date.now().toString(),
-      },
-      { merge: true }
-    );
+    try {
+      editsCollection.doc(uid).update({ last: Date.now().toString() });
+    } catch (_) {
+      editsCollection.doc(uid).set({ last: Date.now().toString(), refills: 0 });
+    }
+
+    return Promise.resolve("Updated");
   });
 
 export const createPayment = functions
@@ -44,7 +51,7 @@ export const createPayment = functions
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            price: "price_1MfXgNGIAKCCEud9qrVips2u",
+            price: STRIPE_PRICE_ID.value(),
             quantity: 1,
           },
         ],
@@ -61,10 +68,26 @@ export const completePayment = functions
   .https.onRequest((req, res) => {
     cors(req, res, async () => {
       if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
+      if (!req.query.id || !req.query.uid || typeof req.query.uid !== "string")
+        return;
 
       const session = await stripe.checkout.sessions.retrieve(req.query.id);
       if (!session) res.status(404).json({ response: "Not found" });
-      // TODO: update refill collection
+
+      try {
+        editsCollection
+          .doc(req.query.uid)
+          .update({
+            refills: admin.firestore.FieldValue.increment(
+              REFILLS_COUNT.value()
+            ),
+          });
+      } catch (_) {
+        editsCollection
+          .doc(req.query.uid)
+          .set({ last: "0", refills: REFILLS_COUNT.value() });
+      }
+
       res.json({ response: "Success" });
     });
   });
