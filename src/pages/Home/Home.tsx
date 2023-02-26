@@ -11,7 +11,6 @@ import {
 } from "firebase/firestore";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
-import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
 import { useFirebase } from "../../hooks/useFirebase";
@@ -36,13 +35,8 @@ export function Home() {
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
-  const [user] = useUser();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!user) return navigate("/login");
-  }, []);
-
+  const [user] = useUser(true);
+  
   useEffect(() => {
     if (!fluidsCollection.current || !serverId) return;
     if (unsubscribe.current) unsubscribe.current();
@@ -82,7 +76,6 @@ export function Home() {
   }
 
   function createFluid() {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
     showNotification({
@@ -96,7 +89,7 @@ export function Home() {
       rank: 1,
       serverId: serverId,
       solid: false,
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         updateNotification({
@@ -118,7 +111,6 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
-    if (!user) return navigate("/login");
     if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
     if (fluidIndex < 0 || (toSync && toSync !== id)) return;
@@ -129,7 +121,6 @@ export function Home() {
   }
 
   function syncFluid() {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current || !toSync || !fluids) return;
 
     showNotification({
@@ -146,7 +137,7 @@ export function Home() {
       echo: fluid.echo,
       rank: fluid.rank,
       serverId: fluid.serverId,
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         updateNotification({
@@ -185,7 +176,6 @@ export function Home() {
   }
 
   function deleteFluid(id: string) {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
     const fluidDoc = doc(fluidsCollection.current, id);
@@ -195,7 +185,7 @@ export function Home() {
       loading: true,
     });
     updateDoc(fluidDoc, {
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         deleteDoc(fluidDoc)

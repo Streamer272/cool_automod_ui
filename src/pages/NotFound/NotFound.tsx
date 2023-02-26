@@ -6,7 +6,7 @@ export function NotFound() {
       <p className="title">404</p>
       <p className="subtitle">Page not found</p>
       <p className="link">
-        Go back <a href="/">home</a>
+        Return <a href="/">home</a>
       </p>
     </>
   );
