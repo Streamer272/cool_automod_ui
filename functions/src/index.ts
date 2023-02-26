@@ -1,8 +1,11 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { defineSecret } from "firebase-functions/params";
+import { defineSecret, defineString } from "firebase-functions/params";
+const stripeModule = require("stripe");
 
-const stripe = require("stripe")(defineSecret("STRIPE_SECRET_KEY").value());
+let stripe: any | undefined;
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const FRONTEND_URL = defineString("FRONTEND_URL");
 admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
@@ -31,24 +34,38 @@ export const markEdit = functions.firestore
     );
   });
 
-export const preparePayment = functions.https.onRequest(async (_, res) => {
-  const session = await stripe.checkout.sessions.create({
-    line_items: [
-      {
-        price_data: {
-          currency: "EUR",
-          product_data: {
-            name: "Automod Refill",
+export const preparePayment = functions
+  .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
+  .https.onRequest(async (_, res) => {
+    if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
+
+    const session = await stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price_data: {
+            currency: "EUR",
+            product_data: {
+              name: "Automod Refill",
+            },
+            unit_amount: 100,
           },
-          unit_amount: 100,
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    mode: "payment",
-    success_url:
-      "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
-    cancel_url: "http://localhost:5173/cancel",
+      ],
+      mode: "payment",
+      success_url: `${FRONTEND_URL.value()}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${FRONTEND_URL.value()}/cancel`,
+    });
+    res.json({ url: session.url });
   });
-  res.json({ url: session.url });
-});
+
+export const completePayment = functions
+  .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
+  .https.onRequest(async (req, res) => {
+    if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
+
+    const session = await stripe.checkout.sessions.retrieve(req.query.id);
+    if (!session) res.status(404).json({ response: "Not found" });
+    // TODO: update refill collection
+    res.json({ response: "Success" });
+  });
