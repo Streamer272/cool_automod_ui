@@ -8,6 +8,7 @@ import {
   deleteDoc,
   addDoc,
   getDocs,
+  increment,
 } from "firebase/firestore";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
@@ -29,22 +30,46 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
+interface Edit {
+  last: number;
+  refills: number;
+}
+
+const MILLIS_TO_DAYS = 1000 * 60 * 60 * 24;
+
 export function Home() {
   const { fluidsCollection, editsCollection, analytics } = useFirebase();
   const unsubscribe = useRef<Function | undefined>();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
+  const [edit, setEdit] = useState<Edit | undefined>();
   const [user] = useUser(true);
-  
+
   useEffect(() => {
-    if (!fluidsCollection.current || !serverId) return;
+    if (!user || !editsCollection.current)
+      return showNotification({
+        message: "Couldn't find user or collection",
+        color: "red",
+      });
+
+    onSnapshot(doc(editsCollection.current, user.id), (doc) => {
+      setEdit(doc.data() as Edit);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!fluidsCollection.current)
+      return showNotification({
+        message: "Couldn't find collection",
+        color: "red",
+      });
+    if (!serverId) return;
     if (unsubscribe.current) unsubscribe.current();
-    if (analytics.current) {
+    if (analytics.current)
       logEvent(analytics.current, "select_item", {
         serverId: serverId,
       });
-    }
 
     const fluidsQuery = query(
       fluidsCollection.current,
@@ -66,17 +91,70 @@ export function Home() {
     return fluid.solid || (!!toSync && toSync !== fluid.id);
   }
 
-  async function getMoreRefills() {
-    const response = await axios.get(`${useBackendUrl()}/createPayment`);
-    window.location = response.data.url;
+  function getMoreRefills() {
+    axios
+      .get(`${useBackendUrl()}/createPayment`)
+      .then((response) => {
+        window.location.assign(response.data.url);
+      })
+      .catch(() => {
+        showNotification({ message: "Couldn't fetch server", color: "red" });
+      });
   }
 
   async function useRefill() {
-    // TODO
+    if (!edit)
+      return showNotification({
+        message: "Couldn't find edit record",
+        color: "red",
+      });
+    if (!editsCollection.current || !user)
+      return showNotification({
+        message: "Couldn't find user or collection",
+        color: "red",
+      });
+    if (edit.refills <= 0)
+      return showNotification({
+        message: "Not enough refills",
+        color: "red",
+      });
+    if (
+      Math.floor(edit.last / MILLIS_TO_DAYS) !==
+      Math.floor(Date.now() / MILLIS_TO_DAYS)
+    )
+      return showNotification({
+        message: "Edit is ready",
+        color: "red",
+      });
+
+    showNotification({
+      id: "refill",
+      message: "Refilling edit...",
+      loading: true,
+    });
+    updateDoc(doc(editsCollection.current, user.id), {
+      last: 0,
+      refills: increment(-1),
+    })
+      .then(() => {
+        updateNotification({
+          id: "refill",
+          message: "Edit refilled",
+        });
+      })
+      .catch((e) => {
+        console.log("E", e);
+        updateNotification({
+          id: "refill",
+          message: "Couldn't refill",
+          color: "red",
+        });
+      });
   }
 
   function createFluid() {
-    if (!fluidsCollection.current) return;
+    if (!fluidsCollection.current)
+      return showNotification({ message: "Couldn't find collection" });
 
     showNotification({
       id: "create",
@@ -100,7 +178,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "create",
-          message: "Failed to create document (out of edits)",
+          message: "Couldn't create document (out of edits)",
           color: "red",
         });
       });
@@ -111,9 +189,15 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
-    if (!fluids || !fluidsCollection) return;
+    if (!fluids || !fluidsCollection)
+      return showNotification({
+        message: "Couldn't find fluids or collection",
+        color: "red",
+      });
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
-    if (fluidIndex < 0 || (toSync && toSync !== id)) return;
+    if (fluidIndex < 0)
+      return showNotification({ message: "Couldn't find fluid", color: "red" });
+    if (toSync && toSync !== id) return;
 
     fluids[fluidIndex][key] = value;
     setFluids([...fluids]);
@@ -121,7 +205,11 @@ export function Home() {
   }
 
   function syncFluid() {
-    if (!fluidsCollection.current || !toSync || !fluids) return;
+    if (!fluidsCollection.current || !toSync || !fluids)
+      return showNotification({
+        message: "Couldn't find fluids or syncing fluid or collection",
+        color: "red",
+      });
 
     showNotification({
       id: "update",
@@ -130,7 +218,12 @@ export function Home() {
     });
     const fluid = fluids.find((fluid) => fluid.id === toSync);
     const fluidDoc = doc(fluidsCollection.current!!, toSync);
-    if (!fluid) return;
+    if (!fluid)
+      return updateNotification({
+        id: "update",
+        message: "Couldn't find syncing fluid",
+        color: "red",
+      });
 
     updateDoc(fluidDoc, {
       cause: fluid.cause,
@@ -141,7 +234,7 @@ export function Home() {
     })
       .then(() => {
         updateNotification({
-          id: "create",
+          id: "update",
           message: "Updated document",
         });
         setToSync(undefined);
@@ -149,7 +242,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "update",
-          message: "Failed to update document (out of edits)",
+          message: "Couldn't update document (out of edits)",
           color: "red",
         });
         setToSync(undefined);
@@ -157,7 +250,11 @@ export function Home() {
   }
 
   async function resetFluids() {
-    if (!fluidsCollection.current || !serverId) return;
+    if (!fluidsCollection.current || !serverId)
+      return showNotification({
+        message: "Couldn't find collection or server ID",
+        color: "red",
+      });
 
     const fluidsQuery = query(
       fluidsCollection.current,
@@ -176,7 +273,11 @@ export function Home() {
   }
 
   function deleteFluid(id: string) {
-    if (!fluidsCollection.current) return;
+    if (!fluidsCollection.current)
+      return showNotification({
+        message: "Couldn't find collection",
+        color: "red",
+      });
 
     const fluidDoc = doc(fluidsCollection.current, id);
     showNotification({
@@ -198,7 +299,7 @@ export function Home() {
           .catch(() => {
             updateNotification({
               id: "delete",
-              message: "Failed to delete document (out of edits)",
+              message: "Couldn't delete document (out of edits)",
               color: "red",
             });
           });
@@ -206,7 +307,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "delete",
-          message: "Failed to delete document (out of edits)",
+          message: "Couldn't delete document (out of edits)",
           color: "red",
         });
       });
@@ -214,6 +315,15 @@ export function Home() {
 
   return (
     <div className="home">
+      {edit && (
+        <p className="edit">
+          Edit{" "}
+          {Math.floor(edit.last / MILLIS_TO_DAYS) ===
+            Math.floor(Date.now() / MILLIS_TO_DAYS) && "not "}
+          ready
+        </p>
+      )}
+
       <Input
         placeholder="Server ID"
         radius="xl"
@@ -332,6 +442,12 @@ export function Home() {
           Use refill
         </Button>
         <button className="get" onClick={getMoreRefills}>
+          {edit && (
+            <>
+              You have {edit?.refills}
+              <br />
+            </>
+          )}
           Need more?
           <span className="material-symbols-outlined">exposure_plus_1</span>
         </button>
