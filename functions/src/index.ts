@@ -44,13 +44,7 @@ export const createPayment = functions
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
-            price_data: {
-              currency: "EUR",
-              product_data: {
-                name: "Automod Refill",
-              },
-              unit_amount: 100,
-            },
+            price: "price_1MfXgNGIAKCCEud9qrVips2u",
             quantity: 1,
           },
         ],
@@ -58,7 +52,6 @@ export const createPayment = functions
         success_url: `${FRONTEND_URL.value()}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${FRONTEND_URL.value()}/cancel`,
       });
-      functions.logger.log("c4");
       res.json({ url: session.url });
     });
   });
