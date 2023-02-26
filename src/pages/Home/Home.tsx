@@ -15,11 +15,12 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
-import { HttpsCallable, getFunctions, httpsCallable } from "firebase/functions";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
+import { useBackendUrl } from "../../hooks/useBackendUrl";
+import axios from "axios";
 import "./style.scss";
 import "../../styles/icons.scss";
 
@@ -42,21 +43,12 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
-interface Empty {}
-
-interface StripeSession {
-  url: string;
-}
-
 export function Home() {
   const fluidsCollection = useRef<
     CollectionReference<DocumentData> | undefined
   >();
   const unsubscribe = useRef<Function | undefined>();
   const analytics = useRef<Analytics | undefined>();
-  const createPayment = useRef<
-    HttpsCallable<Empty, StripeSession> | undefined
-  >();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
@@ -68,12 +60,7 @@ export function Home() {
 
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
-    const functions = getFunctions(app);
     analytics.current = getAnalytics(app);
-    createPayment.current = httpsCallable<Empty, StripeSession>(
-      functions,
-      "createPayment"
-    );
     fluidsCollection.current = collection(db, "fluids");
   }, []);
 
@@ -106,10 +93,8 @@ export function Home() {
   }
 
   async function getMoreRefills() {
-    if (!createPayment.current) return;
-
-    const session = await createPayment.current({});
-    navigate(session.data.url);
+    const response = await axios.get(`${useBackendUrl()}/createPayment`);
+    window.location = response.data.url;
   }
 
   function createFluid() {
@@ -138,7 +123,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "create",
-          message: "Failed to create document",
+          message: "Failed to create document (out of edits)",
           color: "red",
         });
       });
@@ -189,7 +174,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "update",
-          message: "Failed to update document",
+          message: "Failed to update document (out of edits)",
           color: "red",
         });
         setToSync(undefined);
@@ -239,7 +224,7 @@ export function Home() {
           .catch(() => {
             updateNotification({
               id: "delete",
-              message: "Failed to delete document",
+              message: "Failed to delete document (out of edits)",
               color: "red",
             });
           });
@@ -247,7 +232,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "delete",
-          message: "Failed to delete document",
+          message: "Failed to delete document (out of edits)",
           color: "red",
         });
       });
