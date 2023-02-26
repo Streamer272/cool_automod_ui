@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { initializeApp } from "firebase/app";
 import {
-  CollectionReference,
-  DocumentData,
-  collection,
   doc,
-  getFirestore,
   onSnapshot,
   query,
   where,
@@ -14,24 +9,15 @@ import {
   addDoc,
   getDocs,
 } from "firebase/firestore";
-import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
-import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
+import { useFirebase } from "../../hooks/useFirebase";
+import { logEvent } from "firebase/analytics";
 import axios from "axios";
 import "./style.scss";
 import "../../styles/icons.scss";
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBTp2fk1PNYxSrnaG2LOLu0yUAJ7ZBD4hY",
-  authDomain: "automod-5f5ab.firebaseapp.com",
-  projectId: "automod-5f5ab",
-  storageBucket: "automod-5f5ab.appspot.com",
-  messagingSenderId: "443774039339",
-  appId: "1:443774039339:web:23009675563b39bfdcc16e",
-};
 
 interface Fluid {
   id: string;
@@ -43,40 +29,22 @@ interface Fluid {
   [key: string]: string | number | boolean;
 }
 
-interface Empty {}
-
-interface StripeSession {
-  url: string;
-}
-
 export function Home() {
-  const fluidsCollection = useRef<
-    CollectionReference<DocumentData> | undefined
-  >();
+  const { fluidsCollection, editsCollection, analytics } = useFirebase();
   const unsubscribe = useRef<Function | undefined>();
-  const analytics = useRef<Analytics | undefined>();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
-  const [user] = useUser();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!user) return navigate("/login");
-
-    const app = initializeApp(FIREBASE_CONFIG);
-    const db = getFirestore(app);
-    analytics.current = getAnalytics(app);
-    fluidsCollection.current = collection(db, "fluids");
-  }, []);
-
+  const [user] = useUser(true);
+  
   useEffect(() => {
     if (!fluidsCollection.current || !serverId) return;
     if (unsubscribe.current) unsubscribe.current();
-    if (analytics.current)
+    if (analytics.current) {
       logEvent(analytics.current, "select_item", {
         serverId: serverId,
       });
+    }
 
     const fluidsQuery = query(
       fluidsCollection.current,
@@ -100,15 +68,14 @@ export function Home() {
 
   async function getMoreRefills() {
     const response = await axios.get(`${useBackendUrl()}/createPayment`);
-    console.log("response", response);
-    // if (!createPayment.current) return;
+    window.location = response.data.url;
+  }
 
-    // const session = await createPayment.current({});
-    // navigate(session.data.url);
+  async function useRefill() {
+    // TODO
   }
 
   function createFluid() {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
     showNotification({
@@ -122,7 +89,7 @@ export function Home() {
       rank: 1,
       serverId: serverId,
       solid: false,
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         updateNotification({
@@ -133,7 +100,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "create",
-          message: "Failed to create document",
+          message: "Failed to create document (out of edits)",
           color: "red",
         });
       });
@@ -144,7 +111,6 @@ export function Home() {
     key: string,
     value: string | number | boolean
   ) {
-    if (!user) return navigate("/login");
     if (!fluids || !fluidsCollection) return;
     const fluidIndex = fluids.findIndex((fluid) => fluid.id === id);
     if (fluidIndex < 0 || (toSync && toSync !== id)) return;
@@ -155,7 +121,6 @@ export function Home() {
   }
 
   function syncFluid() {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current || !toSync || !fluids) return;
 
     showNotification({
@@ -172,7 +137,7 @@ export function Home() {
       echo: fluid.echo,
       rank: fluid.rank,
       serverId: fluid.serverId,
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         updateNotification({
@@ -184,7 +149,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "update",
-          message: "Failed to update document",
+          message: "Failed to update document (out of edits)",
           color: "red",
         });
         setToSync(undefined);
@@ -211,7 +176,6 @@ export function Home() {
   }
 
   function deleteFluid(id: string) {
-    if (!user) return navigate("/login");
     if (!fluidsCollection.current) return;
 
     const fluidDoc = doc(fluidsCollection.current, id);
@@ -221,7 +185,7 @@ export function Home() {
       loading: true,
     });
     updateDoc(fluidDoc, {
-      uid: user.id,
+      uid: user!!.id,
     })
       .then(() => {
         deleteDoc(fluidDoc)
@@ -234,7 +198,7 @@ export function Home() {
           .catch(() => {
             updateNotification({
               id: "delete",
-              message: "Failed to delete document",
+              message: "Failed to delete document (out of edits)",
               color: "red",
             });
           });
@@ -242,7 +206,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "delete",
-          message: "Failed to delete document",
+          message: "Failed to delete document (out of edits)",
           color: "red",
         });
       });
@@ -364,7 +328,9 @@ export function Home() {
       )}
 
       <div className="refill-controls">
-        <Button size="lg">Use refill</Button>
+        <Button size="lg" onClick={useRefill}>
+          Use refill
+        </Button>
         <button className="get" onClick={getMoreRefills}>
           Need more?
           <span className="material-symbols-outlined">exposure_plus_1</span>

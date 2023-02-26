@@ -6,6 +6,8 @@ import { Landing } from "./pages/Landing/Landing";
 import { Home } from "./pages/Home/Home";
 import { Login } from "./pages/Login/Login";
 import { NotFound } from "./pages/NotFound/NotFound";
+import { Success } from "./pages/Success/Success";
+import { Cancel } from "./pages/Cancel/Cancel";
 
 const router = createBrowserRouter([
   {
@@ -21,9 +23,17 @@ const router = createBrowserRouter([
     element: <Login />,
   },
   {
+    path: "/success",
+    element: <Success />,
+  },
+  {
+    path: "/cancel",
+    element: <Cancel />,
+  },
+  {
     path: "*",
-    element: <NotFound />
-  }
+    element: <NotFound />,
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
