@@ -10,6 +10,10 @@ admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
 
+function useCors(res: functions.Response<any>) {
+  res.set("Access-Control-Allow-Origin", FRONTEND_URL.value());
+}
+
 export const markEdit = functions.firestore
   .document("/fluids/{docId}")
   .onWrite(async (snap, context) => {
@@ -36,9 +40,10 @@ export const markEdit = functions.firestore
 
 export const preparePayment = functions
   .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
-  .https.onCall(async (data, context) => {
+  .https.onRequest(async (req, res) => {
     if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
 
+    useCors(res);
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
@@ -56,17 +61,17 @@ export const preparePayment = functions
       success_url: `${FRONTEND_URL.value()}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL.value()}/cancel`,
     });
-    return { url: session.url };
+    res.json({ url: session.url });
   });
 
 export const completePayment = functions
   .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
-  .https.onCall(async (data, context) => {
+  .https.onRequest(async (req, res) => {
     if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
 
-    const session = await stripe.checkout.sessions.retrieve(data.id);
-    if (!session)
-      throw new functions.https.HttpsError("not-found", "Not found");
+    useCors(res);
+    const session = await stripe.checkout.sessions.retrieve(req.query.id);
+    if (!session) res.status(404).json({ response: "Not found" });
     // TODO: update refill collection
-    return { response: "Success" };
+    res.json({ response: "Success" });
   });

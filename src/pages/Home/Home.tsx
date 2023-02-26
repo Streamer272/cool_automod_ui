@@ -15,11 +15,12 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { Analytics, getAnalytics, logEvent } from "firebase/analytics";
-import { HttpsCallable, getFunctions, httpsCallable } from "firebase/functions";
 import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
+import { useBackendUrl } from "../../hooks/useBackendUrl";
+import axios from "axios";
 import "./style.scss";
 import "../../styles/icons.scss";
 
@@ -54,9 +55,6 @@ export function Home() {
   >();
   const unsubscribe = useRef<Function | undefined>();
   const analytics = useRef<Analytics | undefined>();
-  const createPayment = useRef<
-    HttpsCallable<Empty, StripeSession> | undefined
-  >();
   const [toSync, setToSync] = useState<string | undefined>();
   const [serverId, setServerId] = useState<string | undefined>();
   const [fluids, setFluids] = useState<Fluid[] | undefined>();
@@ -68,12 +66,7 @@ export function Home() {
 
     const app = initializeApp(FIREBASE_CONFIG);
     const db = getFirestore(app);
-    const functions = getFunctions(app);
     analytics.current = getAnalytics(app);
-    createPayment.current = httpsCallable<Empty, StripeSession>(
-      functions,
-      "createPayment"
-    );
     fluidsCollection.current = collection(db, "fluids");
   }, []);
 
@@ -106,10 +99,12 @@ export function Home() {
   }
 
   async function getMoreRefills() {
-    if (!createPayment.current) return;
+    const response = await axios.get(`${useBackendUrl()}/createPayment`);
+    console.log("response", response);
+    // if (!createPayment.current) return;
 
-    const session = await createPayment.current({});
-    navigate(session.data.url);
+    // const session = await createPayment.current({});
+    // navigate(session.data.url);
   }
 
   function createFluid() {

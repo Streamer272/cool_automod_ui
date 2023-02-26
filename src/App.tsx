@@ -1,6 +1,6 @@
 import { MantineProvider } from "@mantine/core";
-import "./style.scss";
 import { NotificationsProvider } from "@mantine/notifications";
+import "./style.scss";
 
 type Props = {
   children: JSX.Element | JSX.Element[];
