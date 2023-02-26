@@ -20,6 +20,7 @@ service cloud.firestore {
 
     match /edits/{docId} {
       allow read: if true;
+      allow update: if request.resource.data.refills == resource.data.refills - 1 && request.resource.data.last == 0 && resource.data.last != 0;
     }
   }
 }

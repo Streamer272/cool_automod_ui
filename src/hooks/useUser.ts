@@ -9,7 +9,7 @@ export function useUser(depends?: boolean): [User | undefined, Function] {
   const navigate = useNavigate();
   const [cookies, setCookie] = useCookies(["user"]);
   if (depends && !cookies["user"]) {
-    navigate("/login");
+    window.location.assign("/login");
   }
 
   return [

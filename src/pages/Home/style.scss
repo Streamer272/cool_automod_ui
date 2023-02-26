@@ -7,6 +7,15 @@
   flex-direction: column;
   width: fit-content;
 
+  .edit {
+    position: absolute;
+    top: 1rem;
+    left: 1.2rem;
+    font-size: 1.2rem;
+    padding: 0;
+    margin: 0;
+  }
+
   .input {
     width: fit-content;
     margin: 0 0 1rem 0;
@@ -78,13 +87,13 @@
 
   .refill-controls {
     position: absolute;
-    top: 1rem;
+    top: 1.5rem;
     right: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    padding: 0 .25rem;
+    padding: 0 0.25rem;
 
     .get {
       display: flex;
@@ -94,7 +103,7 @@
       font-size: 1rem;
       color: $color-200;
       padding: 0;
-      margin: .75rem 0 0 0;
+      margin: 0.75rem 0 0 0;
       border: none;
       background: transparent;
       cursor: pointer;
