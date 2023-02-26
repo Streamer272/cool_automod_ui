@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function editReady(request) {
       return !exists(/databases/$(database)/documents/edits/$(request.resource.data.uid)) ||
-              int(int(get(/databases/$(database)/documents/edits/$(request.resource.data.uid)).data.last) / 1000 / 60 / 60 / 24) !=
+              int(get(/databases/$(database)/documents/edits/$(request.resource.data.uid)).data.last / 1000 / 60 / 60 / 24) !=
               int(request.time.toMillis() / 1000 / 60 / 60 / 24);
     }
 
@@ -20,7 +20,8 @@ service cloud.firestore {
 
     match /edits/{docId} {
       allow read: if true;
-      allow update: if request.resource.data.refills == resource.data.refills - 1 && request.resource.data.last == 0 && resource.data.last != 0;
+      allow update: if (request.resource.data.refills == resource.data.refills - 1 && request.resource.data.last == 0 && resource.data.last != 0) ||
+                       (request.resource.data.refills == resource.data.refills && int(request.resource.data.last / 1000 / 60 / 60 / 24) == int(request.time.toMillis() / 1000 / 60 / 60 / 24));
     }
   }
 }
