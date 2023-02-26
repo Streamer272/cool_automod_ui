@@ -12,6 +12,8 @@ export function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (user) return navigate("/home");
+
     const queryParams = new URLSearchParams(window.location.search);
     const code = queryParams.get("code");
     const error = queryParams.get("error");
