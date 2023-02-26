@@ -17,10 +17,6 @@ admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
 
-function useCors(res: functions.Response<any>) {
-  res.set("Access-Control-Allow-Origin", FRONTEND_URL.value());
-}
-
 export const markEdit = functions.firestore
   .document("/fluids/{docId}")
   .onWrite(async (snap, context) => {
