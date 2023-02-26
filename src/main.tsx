@@ -6,7 +6,7 @@ import { Landing } from "./pages/Landing/Landing";
 import { Home } from "./pages/Home/Home";
 import { Login } from "./pages/Login/Login";
 import { NotFound } from "./pages/NotFound/NotFound";
-import { Submit } from "./pages/Submit/Submit";
+import { Success } from "./pages/Success/Success";
 import { Cancel } from "./pages/Cancel/Cancel";
 
 const router = createBrowserRouter([
@@ -23,8 +23,8 @@ const router = createBrowserRouter([
     element: <Login />,
   },
   {
-    path: "/submit",
-    element: <Submit />,
+    path: "/success",
+    element: <Success />,
   },
   {
     path: "/cancel",

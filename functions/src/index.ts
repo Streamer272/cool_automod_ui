@@ -20,10 +20,8 @@ const editsCollection = db.collection("edits");
 export const markEdit = functions.firestore
   .document("/fluids/{docId}")
   .onWrite(async (snap, context) => {
-    if (context.eventType === "google.firestore.document.delete") {
-      functions.logger.log("Skipping DELETE event");
+    if (context.eventType === "google.firestore.document.delete")
       return Promise.resolve("Skipped");
-    }
 
     let uid: string | undefined;
     if (snap.after.exists) uid = snap.after.data()!!.uid;
@@ -34,9 +32,9 @@ export const markEdit = functions.firestore
     }
 
     try {
-      editsCollection.doc(uid).update({ last: Date.now().toString() });
+      editsCollection.doc(uid).update({ last: Date.now() });
     } catch (_) {
-      editsCollection.doc(uid).set({ last: Date.now().toString(), refills: 0 });
+      editsCollection.doc(uid).set({ last: Date.now(), refills: 0 });
     }
 
     return Promise.resolve("Updated");
@@ -48,6 +46,7 @@ export const createPayment = functions
     cors(req, res, async () => {
       if (!stripe) stripe = stripeModule(STRIPE_SECRET_KEY.value());
 
+      functions.logger.log("Creating checkout session");
       const session = await stripe.checkout.sessions.create({
         line_items: [
           {
@@ -75,17 +74,24 @@ export const completePayment = functions
       if (!session) res.status(404).json({ response: "Not found" });
 
       try {
-        editsCollection
-          .doc(req.query.uid)
-          .update({
-            refills: admin.firestore.FieldValue.increment(
-              REFILLS_COUNT.value()
-            ),
-          });
+        const editsDoc = await editsCollection.doc(req.query.uid).get();
+        if (editsDoc.data()?.session === req.query.id) {
+          functions.logger.log("Disallowed reuse of Stripe Session ID");
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        editsCollection.doc(req.query.uid).update({
+          refills: admin.firestore.FieldValue.increment(REFILLS_COUNT.value()),
+          session: req.query.id,
+        });
       } catch (_) {
-        editsCollection
-          .doc(req.query.uid)
-          .set({ last: "0", refills: REFILLS_COUNT.value() });
+        editsCollection.doc(req.query.uid).set({
+          last: 0,
+          refills: REFILLS_COUNT.value(),
+          session: req.query.id,
+        });
       }
 
       res.json({ response: "Success" });

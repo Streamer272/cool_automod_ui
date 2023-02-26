@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import axios from "axios";
 
-export function Submit() {
+export function Success() {
   const [user] = useUser(true);
   const navigate = useNavigate();
 
