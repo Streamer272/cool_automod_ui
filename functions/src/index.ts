@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { defineSecret } from "firebase-functions/params";
 
+const stripe = require("stripe")(defineSecret("STRIPE_SECRET_KEY").value());
 admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
@@ -28,3 +30,25 @@ export const markEdit = functions.firestore
       { merge: true }
     );
   });
+
+export const preparePayment = functions.https.onRequest(async (_, res) => {
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        price_data: {
+          currency: "EUR",
+          product_data: {
+            name: "Automod Refill",
+          },
+          unit_amount: 100,
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url:
+      "http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}",
+    cancel_url: "http://localhost:5173/cancel",
+  });
+  res.json({ url: session.url });
+});

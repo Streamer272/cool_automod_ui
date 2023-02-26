@@ -5,6 +5,7 @@ import { App } from "./App";
 import { Landing } from "./pages/Landing/Landing";
 import { Home } from "./pages/Home/Home";
 import { Login } from "./pages/Login/Login";
+import { NotFound } from "./pages/NotFound/NotFound";
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
+  {
+    path: "*",
+    element: <NotFound />
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

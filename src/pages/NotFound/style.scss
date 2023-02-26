@@ -1,0 +1,24 @@
+@import "../../styles/colors.scss";
+
+.title {
+  font-size: 3rem;
+  padding: 0;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 2rem;
+  padding: 0;
+  margin: 0;
+}
+
+.link {
+  font-size: 1.8rem;
+  padding: 0;
+  margin: 0;
+
+  a {
+    text-decoration: underline;
+    color: $color-200;
+  }
+}
