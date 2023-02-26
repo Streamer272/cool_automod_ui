@@ -5,8 +5,6 @@ import { useDiscordOauth2Url } from "../../hooks/useDiscordOauth2Url";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
 import { showNotification } from "@mantine/notifications";
 import axios from "axios";
-import "./style.scss";
-
 export function Login() {
   const [user, setUser] = useUser();
   const navigate = useNavigate();
@@ -21,7 +19,6 @@ export function Login() {
       navigate("/");
     } else if (!code) {
       window.location.assign(useDiscordOauth2Url());
-      return;
     } else {
       axios
         .get(`${useBackendUrl()}/discordLogin`, {

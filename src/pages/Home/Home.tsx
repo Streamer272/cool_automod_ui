@@ -9,9 +9,10 @@ import {
   addDoc,
   getDocs,
   increment,
+  setDoc,
 } from "firebase/firestore";
-import { Table, Input, Button } from "@mantine/core";
 import { useUser } from "../../hooks/useUser";
+import { Button, Input, Table } from "@mantine/core";
 import { showNotification, updateNotification } from "@mantine/notifications";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
 import { useFirebase } from "../../hooks/useFirebase";
@@ -143,13 +144,35 @@ export function Home() {
         });
       })
       .catch((e) => {
-        console.log("E", e);
         updateNotification({
           id: "refill",
           message: "Couldn't refill",
           color: "red",
         });
       });
+  }
+
+  function markEdit() {
+    if (!editsCollection.current || !user)
+      return showNotification({
+        message: "Couldn't find collection or user",
+        color: "red",
+      });
+
+    updateDoc(doc(editsCollection.current, user.id), {
+      last: Date.now(),
+    }).catch(() => {
+      if (!editsCollection.current)
+        return showNotification({
+          message: "Couldn't find collection",
+          color: "red",
+        });
+
+      setDoc(doc(editsCollection.current, user.id), {
+        last: Date.now(),
+        refills: 1,
+      });
+    });
   }
 
   function createFluid() {
@@ -170,6 +193,7 @@ export function Home() {
       uid: user!!.id,
     })
       .then(() => {
+        markEdit();
         updateNotification({
           id: "create",
           message: "Created comment",
@@ -178,7 +202,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "create",
-          message: "Couldn't create document (out of edits)",
+          message: "Couldn't create document (edit not ready)",
           color: "red",
         });
       });
@@ -233,6 +257,7 @@ export function Home() {
       uid: user!!.id,
     })
       .then(() => {
+        markEdit();
         updateNotification({
           id: "update",
           message: "Updated document",
@@ -242,7 +267,7 @@ export function Home() {
       .catch(() => {
         updateNotification({
           id: "update",
-          message: "Couldn't update document (out of edits)",
+          message: "Couldn't update document (edit not ready)",
           color: "red",
         });
         setToSync(undefined);
@@ -285,29 +310,18 @@ export function Home() {
       message: "Deleting document...",
       loading: true,
     });
-    updateDoc(fluidDoc, {
-      uid: user!!.id,
-    })
+    deleteDoc(fluidDoc)
       .then(() => {
-        deleteDoc(fluidDoc)
-          .then(() => {
-            updateNotification({
-              id: "delete",
-              message: "Deleted document",
-            });
-          })
-          .catch(() => {
-            updateNotification({
-              id: "delete",
-              message: "Couldn't delete document (out of edits)",
-              color: "red",
-            });
-          });
+        markEdit();
+        updateNotification({
+          id: "delete",
+          message: "Deleted document",
+        });
       })
       .catch(() => {
         updateNotification({
           id: "delete",
-          message: "Couldn't delete document (out of edits)",
+          message: "Couldn't delete document (edit not ready)",
           color: "red",
         });
       });

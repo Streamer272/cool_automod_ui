@@ -12,6 +12,8 @@ export function useUser(depends?: boolean): [User | undefined, Function] {
     window.location.assign("/login");
   }
 
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1);
   return [
     cookies["user"]
       ? {
@@ -22,6 +24,7 @@ export function useUser(depends?: boolean): [User | undefined, Function] {
       setCookie("user", value, {
         path: "/",
         secure: true,
+        expires: date,
       });
     },
   ];

@@ -20,29 +20,6 @@ admin.initializeApp();
 const db = admin.firestore();
 const editsCollection = db.collection("edits");
 
-export const markEdit = functions.firestore
-  .document("/fluids/{docId}")
-  .onWrite(async (snap, context) => {
-    if (context.eventType === "google.firestore.document.delete")
-      return Promise.resolve("Skipped");
-
-    let uid: string | undefined;
-    if (snap.after.exists) uid = snap.after.data()!!.uid;
-    else if (snap.before.exists) uid = snap.before.data()!!.uid;
-    if (!uid) {
-      functions.logger.log("UID not found");
-      return Promise.reject("UID not found");
-    }
-
-    try {
-      editsCollection.doc(uid).update({ last: Date.now() });
-    } catch (_) {
-      editsCollection.doc(uid).set({ last: Date.now(), refills: 0 });
-    }
-
-    return Promise.resolve("Updated");
-  });
-
 export const createPayment = functions
   .runWith({ secrets: ["STRIPE_SECRET_KEY"] })
   .https.onRequest((req, res) => {
@@ -135,12 +112,10 @@ export const discordLogin = functions
         return res.json({ id: user.data.id });
       } catch (e: any) {
         functions.logger.log("E", e.response.data);
-        return res
-          .status(500)
-          .json({
-            response: "Internal Server Error",
-            description: e.response.data,
-          });
+        return res.status(500).json({
+          response: "Internal Server Error",
+          description: e.response.data,
+        });
       }
     });
   });
