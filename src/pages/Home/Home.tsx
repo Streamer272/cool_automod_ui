@@ -471,7 +471,7 @@ export function Home() {
         )}
 
         <div className="buttons">
-          {toSync && (
+          {serverId && toSync && (
             <>
               <button onClick={resetFluids}>
                 <span className="material-symbols-outlined">restart_alt</span>
@@ -481,9 +481,11 @@ export function Home() {
               </button>
             </>
           )}
-          <button onClick={createFluid}>
-            <span className="material-symbols-outlined">add</span>
-          </button>
+          {serverId && (
+            <button onClick={createFluid}>
+              <span className="material-symbols-outlined">add</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
