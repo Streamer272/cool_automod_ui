@@ -6,9 +6,11 @@
   justify-content: center;
   flex-direction: column;
   width: fit-content;
+  min-width: 100vw;
+  height: 100%;
 
   .edit {
-    position: absolute;
+    position: fixed;
     top: 1rem;
     left: 1.2rem;
     font-size: 1.2rem;
@@ -16,83 +18,8 @@
     margin: 0;
   }
 
-  .input {
-    width: fit-content;
-    margin: 0 0 1rem 0;
-  }
-
-  .table {
-    margin: 1rem 0 0 0;
-
-    td {
-      .editable {
-        border: none;
-        width: auto;
-        height: auto;
-        background: transparent;
-        padding: 0;
-        margin: 0;
-
-        &:focus {
-          outline: none;
-        }
-      }
-
-      .delete {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        button {
-          border: none;
-          background: transparent;
-          width: fit-content;
-          padding: 0;
-          margin: 0;
-
-          &:not(:disabled) {
-            cursor: pointer;
-          }
-
-          span {
-            font-size: 1.5rem;
-          }
-        }
-      }
-
-      &.centered {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-  }
-
-  .buttons {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin: 1rem 2.3rem 0 0;
-    width: 100%;
-
-    button {
-      border: none;
-      background-color: transparent;
-      cursor: pointer;
-      padding: 0;
-      margin: 0;
-      width: fit-content;
-      height: fit-content;
-      margin: 0 0.25rem;
-
-      span {
-        font-size: 2.75rem;
-      }
-    }
-  }
-
   .refill-controls {
-    position: absolute;
+    position: fixed;
     top: 1.5rem;
     right: 1rem;
     display: flex;
@@ -120,6 +47,91 @@
         border-radius: 2rem;
         padding: 0.25rem;
         margin: 0 0 0 0.5rem;
+      }
+    }
+  }
+
+  .wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    .input {
+      width: fit-content;
+      margin: 0 0 1rem 0;
+    }
+
+    .table {
+      position: relative;
+      padding: 0;
+      margin: 1rem 0 0 0;
+      width: fit-content;
+
+      td {
+        .editable {
+          border: none;
+          width: auto;
+          height: auto;
+          background: transparent;
+          padding: 0;
+          margin: 0;
+
+          &:focus {
+            outline: none;
+          }
+        }
+
+        .delete {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          button {
+            border: none;
+            background: transparent;
+            width: fit-content;
+            padding: 0;
+            margin: 0;
+
+            &:not(:disabled) {
+              cursor: pointer;
+            }
+
+            span {
+              font-size: 1.5rem;
+            }
+          }
+        }
+
+        &.centered {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      }
+    }
+
+    .buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin: 1rem 2rem 0 0;
+      width: 100%;
+
+      button {
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
+        width: fit-content;
+        height: fit-content;
+        margin: 0 0.25rem;
+
+        span {
+          font-size: 2.75rem;
+        }
       }
     }
   }

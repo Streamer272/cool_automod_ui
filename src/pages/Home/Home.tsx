@@ -341,134 +341,6 @@ export function Home() {
         </p>
       )}
 
-      <Input
-        placeholder="Server ID"
-        radius="xl"
-        size="lg"
-        className="input"
-        onChange={(event) => setServerId(event.target.value)}
-      />
-
-      {!!serverId && !!fluids && (
-        <>
-          <Table
-            highlightOnHover
-            withColumnBorders
-            fontSize={"md"}
-            horizontalSpacing={"lg"}
-            verticalSpacing={"sm"}
-            className="table"
-          >
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Cause</th>
-                <th>Echo</th>
-                <th>Rank</th>
-                <th>Case Sensitive</th>
-                <th>Server ID</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fluids.map((fluid) => (
-                <tr key={fluid.id}>
-                  <td>{fluid.id}</td>
-                  <td>
-                    <input
-                      value={fluid.cause}
-                      placeholder="Cause"
-                      className="editable"
-                      disabled={getDisabled(fluid)}
-                      onChange={(event) =>
-                        changeFluid(fluid.id, "cause", event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.echo}
-                      placeholder="Echo"
-                      className="editable"
-                      disabled={getDisabled(fluid)}
-                      onChange={(event) =>
-                        changeFluid(fluid.id, "echo", event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.rank}
-                      placeholder="Rank"
-                      className="editable"
-                      disabled={getDisabled(fluid)}
-                      onChange={(event) =>
-                        !isNaN(+event.target.value) &&
-                        changeFluid(fluid.id, "rank", +event.target.value)
-                      }
-                    />
-                  </td>
-                  <td className="centered">
-                    <Checkbox
-                      checked={fluid.caseSensitive}
-                      placeholder="Case Sensitive"
-                      disabled={getDisabled(fluid)}
-                      onChange={(event) =>
-                        changeFluid(
-                          fluid.id,
-                          "caseSensitive",
-                          event.target.checked
-                        )
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={fluid.serverId}
-                      placeholder="Server ID"
-                      className="editable"
-                      disabled={getDisabled(fluid)}
-                      onChange={(event) =>
-                        changeFluid(fluid.id, "serverId", event.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <div className="delete">
-                      <button
-                        className="delete"
-                        disabled={getDisabled(fluid)}
-                        onClick={() => deleteFluid(fluid.id)}
-                      >
-                        <span className="material-symbols-outlined">
-                          delete
-                        </span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-
-          <div className="buttons">
-            {toSync && (
-              <>
-                <button onClick={resetFluids}>
-                  <span className="material-symbols-outlined">restart_alt</span>
-                </button>
-                <button onClick={syncFluid}>
-                  <span className="material-symbols-outlined">save</span>
-                </button>
-              </>
-            )}
-            <button onClick={createFluid}>
-              <span className="material-symbols-outlined">add</span>
-            </button>
-          </div>
-        </>
-      )}
-
       <div className="refill-controls">
         <Button size="lg" onClick={useRefill}>
           Use refill
@@ -483,6 +355,136 @@ export function Home() {
           Need more?
           <span className="material-symbols-outlined">exposure_plus_1</span>
         </button>
+      </div>
+
+      <div className="wrapper">
+        <Input
+          placeholder="Server ID"
+          radius="xl"
+          size="lg"
+          className="input"
+          onChange={(event) => setServerId(event.target.value)}
+        />
+
+        {!!serverId && !!fluids && (
+          <>
+            <Table
+              highlightOnHover
+              withColumnBorders
+              fontSize={"md"}
+              horizontalSpacing={"lg"}
+              verticalSpacing={"sm"}
+              className="table"
+            >
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Cause</th>
+                  <th>Echo</th>
+                  <th>Rank</th>
+                  <th>Case Sensitive</th>
+                  <th>Server ID</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fluids.map((fluid) => (
+                  <tr key={fluid.id}>
+                    <td>{fluid.id}</td>
+                    <td>
+                      <input
+                        value={fluid.cause}
+                        placeholder="Cause"
+                        className="editable"
+                        disabled={getDisabled(fluid)}
+                        onChange={(event) =>
+                          changeFluid(fluid.id, "cause", event.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={fluid.echo}
+                        placeholder="Echo"
+                        className="editable"
+                        disabled={getDisabled(fluid)}
+                        onChange={(event) =>
+                          changeFluid(fluid.id, "echo", event.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={fluid.rank}
+                        placeholder="Rank"
+                        className="editable"
+                        disabled={getDisabled(fluid)}
+                        onChange={(event) =>
+                          !isNaN(+event.target.value) &&
+                          changeFluid(fluid.id, "rank", +event.target.value)
+                        }
+                      />
+                    </td>
+                    <td className="centered">
+                      <Checkbox
+                        checked={fluid.caseSensitive}
+                        placeholder="Case Sensitive"
+                        disabled={getDisabled(fluid)}
+                        onChange={(event) =>
+                          changeFluid(
+                            fluid.id,
+                            "caseSensitive",
+                            event.target.checked
+                          )
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={fluid.serverId}
+                        placeholder="Server ID"
+                        className="editable"
+                        disabled={getDisabled(fluid)}
+                        onChange={(event) =>
+                          changeFluid(fluid.id, "serverId", event.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <div className="delete">
+                        <button
+                          className="delete"
+                          disabled={getDisabled(fluid)}
+                          onClick={() => deleteFluid(fluid.id)}
+                        >
+                          <span className="material-symbols-outlined">
+                            delete
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </>
+        )}
+
+        <div className="buttons">
+          {toSync && (
+            <>
+              <button onClick={resetFluids}>
+                <span className="material-symbols-outlined">restart_alt</span>
+              </button>
+              <button onClick={syncFluid}>
+                <span className="material-symbols-outlined">save</span>
+              </button>
+            </>
+          )}
+          <button onClick={createFluid}>
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        </div>
       </div>
     </div>
   );
