@@ -5,6 +5,7 @@ import { useDiscordOauth2Url } from "../../hooks/useDiscordOauth2Url";
 import { useBackendUrl } from "../../hooks/useBackendUrl";
 import { showNotification } from "@mantine/notifications";
 import axios from "axios";
+
 export function Login() {
   const [user, setUser] = useUser();
   const navigate = useNavigate();
