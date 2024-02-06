@@ -9,48 +9,6 @@
   min-width: 100vw;
   height: 100%;
 
-  .edit {
-    position: fixed;
-    top: 1rem;
-    left: 1.2rem;
-    font-size: 1.2rem;
-    padding: 0;
-    margin: 0;
-  }
-
-  .refill-controls {
-    position: fixed;
-    top: 1.5rem;
-    right: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 0 0.25rem;
-
-    .get {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      font-size: 1rem;
-      color: $color-200;
-      padding: 0;
-      margin: 0.75rem 0 0 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-
-      span {
-        font-size: 1.2rem;
-        border: 2px solid $color-300;
-        border-radius: 2rem;
-        padding: 0.25rem;
-        margin: 0 0 0 0.5rem;
-      }
-    }
-  }
-
   .wrapper {
     display: flex;
     align-items: center;
